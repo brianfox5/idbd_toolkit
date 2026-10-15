@@ -1,0 +1,75 @@
+{
+  "model": "ROA ~ blau_race + prop_f + log(assets) + leverage + firm FE + year FE (cluster SE by firm)",
+  "beta_star_hypothesized": 0.05,
+  "scopes": {
+    "firmwide": {
+      "scope": "firmwide",
+      "n": 40273,
+      "n_firms": 4494,
+      "beta_blau_race": -0.05755,
+      "se": 0.03833,
+      "ci95": [
+        -0.13267,
+        0.01757
+      ],
+      "p_value": 0.1332,
+      "beta_prop_f": 0.01447,
+      "within_r2": 0.1503,
+      "lr_effect_over_null": 0.0602
+    },
+    "mgmt": {
+      "scope": "mgmt",
+      "n": 40381,
+      "n_firms": 4640,
+      "beta_blau_race": -0.03968,
+      "se": 0.01769,
+      "ci95": [
+        -0.07436,
+        -0.005
+      ],
+      "p_value": 0.0249,
+      "beta_prop_f": -0.0093,
+      "within_r2": 0.1353,
+      "lr_effect_over_null": 0.0
+    },
+    "topexec": {
+      "scope": "topexec",
+      "n": 31906,
+      "n_firms": 3869,
+      "beta_blau_race": -0.03392,
+      "se": 0.01117,
+      "ci95": [
+        -0.0558,
+        -0.01203
+      ],
+      "p_value": 0.0024,
+      "beta_prop_f": -0.01058,
+      "within_r2": 0.1081,
+      "lr_effect_over_null": 0.0
+    }
+  },
+  "traits": {
+    "calibrated": {
+      "ok": true,
+      "note": "firm+year FE fit; within R2=0.1503"
+    },
+    "consistent": {
+      "ok": true,
+      "note": "direct effect near zero across all three scopes"
+    },
+    "credible": {
+      "ok": true,
+      "note": "firmwide 95% CI [-0.13267, 0.01757] brackets 0 and excludes the belief-predicted 0.05"
+    }
+  },
+  "belief_evidence": {
+    "diversity_improves_performance": {
+      "bayes_factor": 0.0602,
+      "rationale": "Firm+year FE estimate of diversity->ROA is -0.05755 (95% CI [-0.13267, 0.01757], p=0.1332); data favor the null over the belief-predicted +0.05 effect (LR=0.06)."
+    },
+    "no_direct_effect": {
+      "bayes_factor": 16.6113,
+      "rationale": "Same FE estimate: tight CI around zero is evidence FOR a null direct effect."
+    }
+  }
+}

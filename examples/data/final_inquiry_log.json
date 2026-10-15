@@ -1,0 +1,959 @@
+[
+  {
+    "phase": "intake",
+    "operation": "intake.received",
+    "mode": "auto",
+    "summary": "intake for domain: TMT diversity and firm performance, mediated by the types of actions a top management team chooses to pursue",
+    "ledger_version": 0,
+    "timestamp": "2026-10-08T13:40:00.220426+00:00",
+    "payload": {
+      "brief": {
+        "domain": "TMT diversity and firm performance, mediated by the types of actions a top management team chooses to pursue",
+        "belief_summary": "TMTs with diversity of background and experience are better able to navigate complex decision environments, yielding superior firm performance.",
+        "initiating_anomaly": "DEI backlash and the meritocracy critique: if hiring for diversity is non-meritocratic, diversity may lower average skill, decision quality, and thus performance.",
+        "references": [
+          "Fox, Simsek & Heavey 2022",
+          "Ferrier 2001",
+          "Ferrier & Lyon 2004",
+          "Crossland et al. 2014"
+        ],
+        "researcher": "Brian Fox",
+        "id": "brf-1",
+        "created_at": "2026-10-08T13:40:00.220260+00:00"
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "baseline",
+    "operation": "baseline.establish",
+    "mode": "checkpoint",
+    "summary": "establish baseline BAM: TMT diversity enhances firm performance chiefly INDIRECTLY, by shaping the varie",
+    "ledger_version": 0,
+    "timestamp": "2026-10-08T13:40:00.220468+00:00",
+    "payload": {
+      "bam": {
+        "description": "TMT diversity enhances firm performance chiefly INDIRECTLY, by shaping the variety, complexity, and calibration of the firm's competitive actions; benefits are contingent (requisite fit to environmental variety), not a direct or monotonic effect of diversity, and stem more from experiential than demographic diversity.",
+        "spec": {
+          "literature_summary": "Fox/Simsek/Heavey 2022 (experiential variety -> calibrated repertoire -> ROA; direct effect null); Ferrier 2001 (heterogeneity -> some attack dims; no direct effect; U-shaped complexity); Ferrier & Lyon 2004 (heterogeneity moderates simplicity->performance); Crossland 2014 (CEO career variety -> novelty, not TMT heterogeneity; volatility not level).",
+          "researcher_summary": "Diversity of background/experience helps TMTs navigate complex decisions, improving performance."
+        },
+        "metrics": {},
+        "status": "bam",
+        "id": "mdl-2"
+      },
+      "commitments": [
+        {
+          "statement": "Greater TMT diversity leads to superior firm performance.",
+          "strength": 0.6,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Prevailing view, but direct effects often null (Bell et al. 2011; Fox et al. 2022).",
+          "updates": [],
+          "id": "cmt-3"
+        },
+        {
+          "statement": "Diversity's effect is mediated by the firm's competitive actions (variety/complexity/calibration).",
+          "strength": 0.7,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Core mechanism in Fox et al. 2022 and the Ferrier lineage.",
+          "updates": [],
+          "id": "cmt-4"
+        },
+        {
+          "statement": "There is little/no DIRECT diversity->performance effect; it operates indirectly.",
+          "strength": 0.6,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Direct effects n.s. in Fox et al. 2022 and Ferrier 2001.",
+          "updates": [],
+          "id": "cmt-5"
+        },
+        {
+          "statement": "Diversity's benefit is contingent and non-monotonic (requisite variety; moderation), not 'more is better'.",
+          "strength": 0.7,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Ferrier & Lyon 2004 moderation; Fox 2022 requisite variety; Ferrier 2001 U-shapes.",
+          "updates": [],
+          "id": "cmt-6"
+        },
+        {
+          "statement": "Experiential/task-relevant variety matters more than demographic diversity for performance.",
+          "strength": 0.6,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Fox 2022 gender diversity n.s.; Crossland career variety.",
+          "updates": [],
+          "id": "cmt-7"
+        },
+        {
+          "statement": "Diverse TMTs make higher-quality decisions via broader information processing and constructive conflict.",
+          "strength": 0.55,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Upper-echelons premise; support indirect/mixed.",
+          "updates": [],
+          "id": "cmt-8"
+        },
+        {
+          "statement": "TMT diversity is not achieved at the expense of average member competence (diversity vs. merit not in tension).",
+          "strength": 0.5,
+          "rationale": "",
+          "origin": "agent_estimated",
+          "origin_note": "Implicit, rarely tested; directly challenged by the anomaly.",
+          "updates": [],
+          "id": "cmt-9"
+        }
+      ],
+      "approved": true
+    }
+  },
+  {
+    "phase": "disruption",
+    "operation": "disruption.surface",
+    "mode": "auto",
+    "summary": "surfaced 6 disruption candidate(s) across 5 dimension(s)",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220519+00:00",
+    "payload": {
+      "candidates": [
+        {
+          "description": "DEI mandates/bans and board-diversity quotas now permit causal (not merely correlational) tests of diversity->performance.",
+          "pathway": "new_ways_of_doing",
+          "source": "search",
+          "dimension": "methods",
+          "status": "surfaced",
+          "id": "dsr-10"
+        },
+        {
+          "description": "ML/NLP on executive bios/disclosures can measure individual competence and the TMT skill distribution, separating diversity from average ability.",
+          "pathway": "new_ways_of_doing",
+          "source": "search",
+          "dimension": "methods",
+          "status": "surfaced",
+          "id": "dsr-11"
+        },
+        {
+          "description": "Upper-echelons theory lacks a diversity-competence tradeoff: it credits diversity with cognitive variety but is silent on whether diversity-driven selection lowers average ability.",
+          "pathway": "perceived_gaps",
+          "source": "search",
+          "dimension": "theories",
+          "status": "surfaced",
+          "id": "dsr-12"
+        },
+        {
+          "description": "The current best model cannot explain why direct diversity->performance effects are repeatedly null while diversity is still prescribed - suggesting an unmodeled offsetting negative (competence/coordination) path.",
+          "pathway": "unsolved_puzzles",
+          "source": "search",
+          "dimension": "model",
+          "status": "surfaced",
+          "id": "dsr-13"
+        },
+        {
+          "description": "Widespread DEI rollback and the meritocracy critique: boards/executives increasingly act as if diversity is performance-costly, contrary to prevailing belief.",
+          "pathway": "unexpected_behavior",
+          "source": "researcher_seed",
+          "dimension": "phenomenon",
+          "status": "surfaced",
+          "id": "dsr-14"
+        },
+        {
+          "description": "Diversity-performance correlations appear to weaken or reverse in recent samples and in quasi-experimental (mandate/ban) settings.",
+          "pathway": "anomalous_observations",
+          "source": "search",
+          "dimension": "data",
+          "status": "surfaced",
+          "id": "dsr-15"
+        }
+      ],
+      "by_pathway": {
+        "new_ways_of_doing": 2,
+        "perceived_gaps": 1,
+        "unsolved_puzzles": 1,
+        "unexpected_behavior": 1,
+        "anomalous_observations": 1
+      },
+      "by_dimension": {
+        "methods": 2,
+        "theories": 1,
+        "model": 1,
+        "phenomenon": 1,
+        "data": 1
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "disruption",
+    "operation": "disruption.triage",
+    "mode": "checkpoint",
+    "summary": "triage: select 4 disruption(s) as doubts",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220539+00:00",
+    "payload": {
+      "selected": [
+        {
+          "description": "Upper-echelons theory lacks a diversity-competence tradeoff: it credits diversity with cognitive variety but is silent on whether diversity-driven selection lowers average ability.",
+          "pathway": "perceived_gaps",
+          "source": "search",
+          "dimension": "theories",
+          "status": "surfaced",
+          "id": "dsr-12"
+        },
+        {
+          "description": "The current best model cannot explain why direct diversity->performance effects are repeatedly null while diversity is still prescribed - suggesting an unmodeled offsetting negative (competence/coordination) path.",
+          "pathway": "unsolved_puzzles",
+          "source": "search",
+          "dimension": "model",
+          "status": "surfaced",
+          "id": "dsr-13"
+        },
+        {
+          "description": "Widespread DEI rollback and the meritocracy critique: boards/executives increasingly act as if diversity is performance-costly, contrary to prevailing belief.",
+          "pathway": "unexpected_behavior",
+          "source": "researcher_seed",
+          "dimension": "phenomenon",
+          "status": "surfaced",
+          "id": "dsr-14"
+        },
+        {
+          "description": "Diversity-performance correlations appear to weaken or reverse in recent samples and in quasi-experimental (mandate/ban) settings.",
+          "pathway": "anomalous_observations",
+          "source": "search",
+          "dimension": "data",
+          "status": "surfaced",
+          "id": "dsr-15"
+        }
+      ],
+      "approved": true
+    }
+  },
+  {
+    "phase": "doubt",
+    "operation": "doubt.assess",
+    "mode": "interactive",
+    "summary": "BAM judged INSUFFICIENT",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220566+00:00",
+    "payload": {
+      "bam_sufficient": false,
+      "rationale": "Four doubts (theory gap, null-direct-effect puzzle, DEI rollback, weakening correlations) together indicate the current BAM is insufficient.",
+      "approved": true
+    }
+  },
+  {
+    "phase": "doubt",
+    "operation": "doubt.weaken",
+    "mode": "interactive",
+    "summary": "weaken (BF=0.33) TMT diversity is not achieved at the expense of av",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220575+00:00",
+    "payload": {
+      "commitment_id": "cmt-9",
+      "bayes_factor": 0.33,
+      "doubt_id": "dbt-16",
+      "approved": true
+    }
+  },
+  {
+    "phase": "doubt",
+    "operation": "doubt.weaken",
+    "mode": "interactive",
+    "summary": "weaken (BF=0.5) Greater TMT diversity leads to superior firm perfo",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220589+00:00",
+    "payload": {
+      "commitment_id": "cmt-3",
+      "bayes_factor": 0.5,
+      "doubt_id": "dbt-19",
+      "approved": true
+    }
+  },
+  {
+    "phase": "doubt",
+    "operation": "doubt.weaken",
+    "mode": "interactive",
+    "summary": "weaken (BF=0.5) Diverse TMTs make higher-quality decisions via bro",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220599+00:00",
+    "payload": {
+      "commitment_id": "cmt-8",
+      "bayes_factor": 0.5,
+      "doubt_id": "dbt-17",
+      "approved": true
+    }
+  },
+  {
+    "phase": "design",
+    "operation": "design.mobilize",
+    "mode": "auto",
+    "summary": "mobilized 8 resource(s) across 4 dimension(s), prompted by 4 doubt(s)",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220626+00:00",
+    "payload": {
+      "resources": [
+        {
+          "dimension": "theories",
+          "description": "Upper-echelons theory",
+          "role": "extant theoretical framework",
+          "source": "researcher_seed",
+          "id": "res-23"
+        },
+        {
+          "dimension": "theories",
+          "description": "Law of requisite variety",
+          "role": "extant theoretical framework",
+          "source": "researcher_seed",
+          "id": "res-24"
+        },
+        {
+          "dimension": "data",
+          "description": "The four cited papers' competitive-action + TMT panels",
+          "role": "measurable aspect of domain",
+          "source": "researcher_seed",
+          "id": "res-25"
+        },
+        {
+          "dimension": "methods",
+          "description": "Quasi-experimental designs using DEI mandate/ban variation",
+          "role": "available tool for inquiry",
+          "source": "agent_search",
+          "id": "res-26"
+        },
+        {
+          "dimension": "methods",
+          "description": "NLP/ML measurement of executive competence from bios/disclosures",
+          "role": "available tool for inquiry",
+          "source": "agent_search",
+          "id": "res-27"
+        },
+        {
+          "dimension": "theories",
+          "description": "Competitive dynamics / competitive repertoire theory",
+          "role": "extant theoretical framework",
+          "source": "agent_search",
+          "id": "res-28"
+        },
+        {
+          "dimension": "phenomenon",
+          "description": "TMT decision processes and the DEI/meritocracy discourse",
+          "role": "relevant domain knowledge",
+          "source": "agent_search",
+          "id": "res-29"
+        },
+        {
+          "dimension": "data",
+          "description": "Firm performance (ROA, market-share change) linked to DEI policy shifts",
+          "role": "measurable aspect of domain",
+          "source": "agent_search",
+          "id": "res-30"
+        }
+      ],
+      "by_dimension": {
+        "theories": 3,
+        "data": 2,
+        "methods": 2,
+        "phenomenon": 1
+      },
+      "by_source": {
+        "researcher_seed": 3,
+        "agent_search": 5
+      },
+      "prompted_by": [
+        "dbt-16",
+        "dbt-17",
+        "dbt-18",
+        "dbt-19"
+      ],
+      "approved": true
+    }
+  },
+  {
+    "phase": "design",
+    "operation": "design.frame",
+    "mode": "interactive",
+    "summary": "framed problem: Under what conditions and through what mechanisms does TMT diversity raise versus lower firm performance, once we net cognitive-variety benefits against a possible competence-dilution cost, transmitted through the calibration and quality of the firm's competitive actions?",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220653+00:00",
+    "payload": {
+      "frame": {
+        "statement": "Under what conditions and through what mechanisms does TMT diversity raise versus lower firm performance, once we net cognitive-variety benefits against a possible competence-dilution cost, transmitted through the calibration and quality of the firm's competitive actions?",
+        "data_picture": "TMT panels with competitive-action data (Ferrier/Fox), executive competence proxies from bios/NLP, and quasi-experimental DEI mandate/ban variation.",
+        "mobilized_knowledge": [
+          "upper-echelons theory",
+          "law of requisite variety",
+          "competitive dynamics",
+          "DEI/meritocracy debate"
+        ],
+        "doubt_ids": [
+          "dbt-16",
+          "dbt-17",
+          "dbt-18",
+          "dbt-19"
+        ],
+        "accepted": true,
+        "id": "frm-31"
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "design",
+    "operation": "design.generate_hypotheses",
+    "mode": "auto",
+    "summary": "generated 5 working hypotheses",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220666+00:00",
+    "payload": {
+      "hypotheses": [
+        {
+          "statement": "Net variety-vs-competence: diversity helps when it adds experiential variety without lowering average competence, and hurts when it does.",
+          "rationale": "Reconciles the anomaly with the variety benefit.",
+          "status": "working",
+          "id": "hyp-32"
+        },
+        {
+          "statement": "Calibration: diversity helps only when it calibrates competitive-action variety to environmental variety; DEI-driven diversity uncorrelated with requisite variety yields no benefit.",
+          "rationale": "Fox et al. 2022 requisite variety.",
+          "status": "working",
+          "id": "hyp-33"
+        },
+        {
+          "statement": "Two opposing mediated paths (variety->better actions +; competence-dilution->worse execution -) cancel, explaining null direct effects.",
+          "rationale": "Explains the repeated null direct effects.",
+          "status": "working",
+          "id": "hyp-34"
+        },
+        {
+          "statement": "Type-of-diversity: experiential/task-relevant diversity is positive; demographic-only diversity decoupled from experience is null/negative.",
+          "rationale": "Fox 2022 gender n.s.; Crossland career variety.",
+          "status": "working",
+          "id": "hyp-35"
+        },
+        {
+          "statement": "Context-contingent: in high-backlash/low-trust settings, diversity raises coordination and legitimacy costs that suppress action execution.",
+          "rationale": "Ferrier & Lyon moderation; the backlash phenomenon.",
+          "status": "working",
+          "id": "hyp-36"
+        }
+      ],
+      "frame_id": null,
+      "multiple_working_hypotheses": true,
+      "approved": true
+    }
+  },
+  {
+    "phase": "development",
+    "operation": "development.build_prototype",
+    "mode": "auto",
+    "summary": "built prototype (internally_consistent=True): Moderated-mediation prototype: TMT experiential va",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220683+00:00",
+    "payload": {
+      "model": {
+        "description": "Moderated-mediation prototype: TMT experiential variety -> calibration/quality of competitive actions -> performance, with an offsetting competence-dilution path that can cancel the variety path.",
+        "spec": {
+          "components": [
+            {
+              "kind": "theory",
+              "statement": "Upper-echelons: TMT cognition shapes strategic action"
+            },
+            {
+              "kind": "theory",
+              "statement": "Requisite variety: action variety must match environmental variety"
+            },
+            {
+              "kind": "stylized_fact",
+              "statement": "Direct diversity->performance effects are repeatedly null"
+            },
+            {
+              "kind": "stylized_fact",
+              "statement": "Action complexity->performance is U-shaped, not monotonic"
+            },
+            {
+              "kind": "mechanism",
+              "statement": "Competence-dilution: diversity-via-selection can lower average ability"
+            }
+          ],
+          "hypotheses": [
+            "Net variety-vs-competence: diversity helps when it adds experiential variety without lowering average competence, and hurts when it does.",
+            "Calibration: diversity helps only when it calibrates competitive-action variety to environmental variety; DEI-driven diversity uncorrelated with requisite variety yields no benefit.",
+            "Two opposing mediated paths (variety->better actions +; competence-dilution->worse execution -) cancel, explaining null direct effects.",
+            "Type-of-diversity: experiential/task-relevant diversity is positive; demographic-only diversity decoupled from experience is null/negative.",
+            "Context-contingent: in high-backlash/low-trust settings, diversity raises coordination and legitimacy costs that suppress action execution."
+          ],
+          "frame_id": "frm-31",
+          "contradictions": [],
+          "internally_consistent": true,
+          "troves": [],
+          "techniques": []
+        },
+        "metrics": {},
+        "status": "prototype",
+        "id": "mdl-37"
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "development",
+    "operation": "development.specify_affordances",
+    "mode": "auto",
+    "summary": "attached 3 trove(s) + 3 technique(s)",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220695+00:00",
+    "payload": {
+      "troves": [
+        {
+          "description": "TMT composition + executive bios (experiential variety & competence proxies)"
+        },
+        {
+          "description": "Competitive-action panels (volume / complexity / consistency)"
+        },
+        {
+          "description": "Firm performance (ROA, market-share change) + DEI policy events"
+        }
+      ],
+      "techniques": [
+        {
+          "description": "NLP on bios/disclosures for competence + experiential variety"
+        },
+        {
+          "description": "Optimal matching / repertoire-calibration measures"
+        },
+        {
+          "description": "Causal forest & quasi-experimental estimators on DEI mandate/ban variation"
+        }
+      ],
+      "approved": true
+    }
+  },
+  {
+    "phase": "development",
+    "operation": "development.review",
+    "mode": "checkpoint",
+    "summary": "review prototype: Moderated-mediation prototype: TMT experiential va",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220711+00:00",
+    "payload": {
+      "model": {
+        "description": "Moderated-mediation prototype: TMT experiential variety -> calibration/quality of competitive actions -> performance, with an offsetting competence-dilution path that can cancel the variety path.",
+        "spec": {
+          "components": [
+            {
+              "kind": "theory",
+              "statement": "Upper-echelons: TMT cognition shapes strategic action"
+            },
+            {
+              "kind": "theory",
+              "statement": "Requisite variety: action variety must match environmental variety"
+            },
+            {
+              "kind": "stylized_fact",
+              "statement": "Direct diversity->performance effects are repeatedly null"
+            },
+            {
+              "kind": "stylized_fact",
+              "statement": "Action complexity->performance is U-shaped, not monotonic"
+            },
+            {
+              "kind": "mechanism",
+              "statement": "Competence-dilution: diversity-via-selection can lower average ability"
+            }
+          ],
+          "hypotheses": [
+            "Net variety-vs-competence: diversity helps when it adds experiential variety without lowering average competence, and hurts when it does.",
+            "Calibration: diversity helps only when it calibrates competitive-action variety to environmental variety; DEI-driven diversity uncorrelated with requisite variety yields no benefit.",
+            "Two opposing mediated paths (variety->better actions +; competence-dilution->worse execution -) cancel, explaining null direct effects.",
+            "Type-of-diversity: experiential/task-relevant diversity is positive; demographic-only diversity decoupled from experience is null/negative.",
+            "Context-contingent: in high-backlash/low-trust settings, diversity raises coordination and legitimacy costs that suppress action execution."
+          ],
+          "frame_id": "frm-31",
+          "contradictions": [],
+          "internally_consistent": true,
+          "troves": [
+            {
+              "description": "TMT composition + executive bios (experiential variety & competence proxies)"
+            },
+            {
+              "description": "Competitive-action panels (volume / complexity / consistency)"
+            },
+            {
+              "description": "Firm performance (ROA, market-share change) + DEI policy events"
+            }
+          ],
+          "techniques": [
+            {
+              "description": "NLP on bios/disclosures for competence + experiential variety"
+            },
+            {
+              "description": "Optimal matching / repertoire-calibration measures"
+            },
+            {
+              "description": "Causal forest & quasi-experimental estimators on DEI mandate/ban variation"
+            }
+          ]
+        },
+        "metrics": {},
+        "status": "prototype",
+        "id": "mdl-37"
+      },
+      "note": "Internally consistent; ready to seed with data.",
+      "approved": true
+    }
+  },
+  {
+    "phase": "development",
+    "operation": "development.explore",
+    "mode": "auto",
+    "summary": "recorded exploration: Demographic diversity -> ROA is ~null across all scopes (wit",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220814+00:00",
+    "payload": {
+      "summary": "Demographic diversity -> ROA is ~null across all scopes (within-firm ~0); minorities (esp. Black) leak via turnover faster than they are built via promotion.",
+      "data_ref": {
+        "panel": "firm_year_diversity_panel.parquet",
+        "exploration": "exploration_result.json"
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "execution",
+    "operation": "execution.run",
+    "mode": "auto",
+    "summary": "fit production model; applying 2 evidence update(s)",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220888+00:00",
+    "payload": {
+      "metrics": {
+        "model": "ROA ~ blau_race + prop_f + log(assets) + leverage + firm FE + year FE (cluster SE by firm)",
+        "beta_firmwide": -0.05755,
+        "beta_mgmt": -0.03968,
+        "beta_topexec": -0.03392
+      },
+      "traits": {
+        "calibrated": {
+          "ok": true,
+          "note": "firm+year FE fit; within R2=0.1503"
+        },
+        "consistent": {
+          "ok": true,
+          "note": "direct effect near zero across all three scopes"
+        },
+        "credible": {
+          "ok": true,
+          "note": "firmwide 95% CI [-0.13267, 0.01757] brackets 0 and excludes the belief-predicted 0.05"
+        }
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "execution",
+    "operation": "execution.reflect",
+    "mode": "interactive",
+    "summary": "reflect: Firm+year FE estimates show diversity->ROA is not positive (",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220920+00:00",
+    "payload": {
+      "assessment": "Firm+year FE estimates show diversity->ROA is not positive (slightly negative in management/top-exec), contradicting the original BAM and supporting the mediated/contingent account.",
+      "approved": true
+    }
+  },
+  {
+    "phase": "execution",
+    "operation": "execution.route",
+    "mode": "interactive",
+    "summary": "route: converge",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220923+00:00",
+    "payload": {
+      "decision": "converge",
+      "rationale": "Direct effect stably near/below zero; model is calibrated, consistent, credible.",
+      "approved": true
+    }
+  },
+  {
+    "phase": "enrichment",
+    "operation": "enrichment.validate",
+    "mode": "auto",
+    "summary": "external validation: within-firm FE + cross-scope consistency as robustness",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220928+00:00",
+    "payload": {
+      "summary": "within-firm FE + cross-scope consistency as robustness",
+      "results": {
+        "within_firm_estimate": "null-to-negative",
+        "cross_scope": "consistent",
+        "sensitivity": "robust to scope + controls"
+      },
+      "approved": true
+    }
+  },
+  {
+    "phase": "enrichment",
+    "operation": "enrichment.update_bam",
+    "mode": "interactive",
+    "summary": "IBE: promote production model to new BAM: Moderated-mediation prototype: TMT experiential va",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220964+00:00",
+    "payload": {
+      "model": {
+        "description": "Moderated-mediation prototype: TMT experiential variety -> calibration/quality of competitive actions -> performance, with an offsetting competence-dilution path that can cancel the variety path.",
+        "spec": {
+          "components": [
+            {
+              "kind": "theory",
+              "statement": "Upper-echelons: TMT cognition shapes strategic action"
+            },
+            {
+              "kind": "theory",
+              "statement": "Requisite variety: action variety must match environmental variety"
+            },
+            {
+              "kind": "stylized_fact",
+              "statement": "Direct diversity->performance effects are repeatedly null"
+            },
+            {
+              "kind": "stylized_fact",
+              "statement": "Action complexity->performance is U-shaped, not monotonic"
+            },
+            {
+              "kind": "mechanism",
+              "statement": "Competence-dilution: diversity-via-selection can lower average ability"
+            }
+          ],
+          "hypotheses": [
+            "Net variety-vs-competence: diversity helps when it adds experiential variety without lowering average competence, and hurts when it does.",
+            "Calibration: diversity helps only when it calibrates competitive-action variety to environmental variety; DEI-driven diversity uncorrelated with requisite variety yields no benefit.",
+            "Two opposing mediated paths (variety->better actions +; competence-dilution->worse execution -) cancel, explaining null direct effects.",
+            "Type-of-diversity: experiential/task-relevant diversity is positive; demographic-only diversity decoupled from experience is null/negative.",
+            "Context-contingent: in high-backlash/low-trust settings, diversity raises coordination and legitimacy costs that suppress action execution."
+          ],
+          "frame_id": "frm-31",
+          "contradictions": [],
+          "internally_consistent": true,
+          "troves": [
+            {
+              "description": "TMT composition + executive bios (experiential variety & competence proxies)"
+            },
+            {
+              "description": "Competitive-action panels (volume / complexity / consistency)"
+            },
+            {
+              "description": "Firm performance (ROA, market-share change) + DEI policy events"
+            }
+          ],
+          "techniques": [
+            {
+              "description": "NLP on bios/disclosures for competence + experiential variety"
+            },
+            {
+              "description": "Optimal matching / repertoire-calibration measures"
+            },
+            {
+              "description": "Causal forest & quasi-experimental estimators on DEI mandate/ban variation"
+            }
+          ],
+          "explorations": [
+            {
+              "summary": "Demographic diversity -> ROA is ~null across all scopes (within-firm ~0); minorities (esp. Black) leak via turnover faster than they are built via promotion.",
+              "findings": {
+                "restrictions": {
+                  "year_min": 2008,
+                  "headcount_floor": {
+                    "firmwide": 50,
+                    "mgmt": 10,
+                    "topexec": 5
+                  },
+                  "winsor_roa": "1/99 pct"
+                },
+                "n_firm_years": 62914,
+                "n_firms": 6526,
+                "year_range": [
+                  2008,
+                  2023
+                ],
+                "direct_diversity_to_roa": {
+                  "firmwide": {
+                    "n": 40391,
+                    "corr_roa__blau_race_firmwide": -0.0312,
+                    "corr_roa__prop_f_firmwide": -0.0355,
+                    "corr_roa__blau_race_withinfirm": 0.0139
+                  },
+                  "mgmt": {
+                    "n": 40505,
+                    "corr_roa__blau_race_mgmt": 0.0247,
+                    "corr_roa__prop_f_mgmt": -0.0253,
+                    "corr_roa__blau_race_withinfirm": 0.0063
+                  },
+                  "topexec": {
+                    "n": 32021,
+                    "corr_roa__blau_race_topexec": 0.0483,
+                    "corr_roa__prop_f_topexec": 0.0028,
+                    "corr_roa__blau_race_withinfirm": -0.0052
+                  }
+                },
+                "roa_by_blau_quartile_firmwide": {
+                  "Q1": -0.0187,
+                  "Q2": -0.0208,
+                  "Q3": -0.0235,
+                  "Q4": -0.04
+                },
+                "build_vs_leak_firmwide": {
+                  "f": {
+                    "promotion_share": 0.4022,
+                    "turnover_share": 0.388,
+                    "net_build": 0.0143
+                  },
+                  "black": {
+                    "promotion_share": 0.0346,
+                    "turnover_share": 0.0523,
+                    "net_build": -0.0177
+                  },
+                  "hispanic": {
+                    "promotion_share": 0.0655,
+                    "turnover_share": 0.0683,
+                    "net_build": -0.0027
+                  },
+                  "api": {
+                    "promotion_share": 0.0705,
+                    "turnover_share": 0.0769,
+                    "net_build": -0.0063
+                  }
+                },
+                "blau_race_trend_firmwide": {
+                  "2008": 0.3647,
+                  "2009": 0.3664,
+                  "2010": 0.3701,
+                  "2011": 0.3748,
+                  "2012": 0.3783,
+                  "2013": 0.3842,
+                  "2014": 0.3908,
+                  "2015": 0.3992,
+                  "2016": 0.4069,
+                  "2017": 0.4136,
+                  "2018": 0.4201,
+                  "2019": 0.4264,
+                  "2020": 0.4293,
+                  "2021": 0.4363,
+                  "2022": 0.4438,
+                  "2023": 0.4471
+                }
+              },
+              "data_ref": {
+                "panel": "firm_year_diversity_panel.parquet",
+                "exploration": "exploration_result.json"
+              },
+              "recorded_at": "2026-10-08T13:40:00.220809+00:00"
+            }
+          ],
+          "traits": {
+            "calibrated": {
+              "ok": true,
+              "note": "firm+year FE fit; within R2=0.1503"
+            },
+            "consistent": {
+              "ok": true,
+              "note": "direct effect near zero across all three scopes"
+            },
+            "credible": {
+              "ok": true,
+              "note": "firmwide 95% CI [-0.13267, 0.01757] brackets 0 and excludes the belief-predicted 0.05"
+            }
+          },
+          "validation": [
+            {
+              "summary": "within-firm FE + cross-scope consistency as robustness",
+              "results": {
+                "within_firm_estimate": "null-to-negative",
+                "cross_scope": "consistent",
+                "sensitivity": "robust to scope + controls"
+              },
+              "recorded_at": "2026-10-08T13:40:00.220926+00:00"
+            }
+          ]
+        },
+        "metrics": {
+          "model": "ROA ~ blau_race + prop_f + log(assets) + leverage + firm FE + year FE (cluster SE by firm)",
+          "beta_firmwide": -0.05755,
+          "beta_mgmt": -0.03968,
+          "beta_topexec": -0.03392
+        },
+        "status": "production",
+        "id": "mdl-37"
+      },
+      "note": "IBE: the moderated-mediation account best explains the null/negative direct effect and the build-leak dynamics.",
+      "approved": true
+    }
+  },
+  {
+    "phase": "enrichment",
+    "operation": "enrichment.warrant",
+    "mode": "interactive",
+    "summary": "warrant 3 contribution(s); resolve 4 doubt(s)",
+    "ledger_version": 1,
+    "timestamp": "2026-10-08T13:40:00.220985+00:00",
+    "payload": {
+      "contributions": [
+        {
+          "type": "theoretical",
+          "statement": "Demographic TMT diversity is not a direct driver of performance; within-firm it is null-to-negative, consistent with a competence/coordination cost offsetting the variety benefit."
+        },
+        {
+          "type": "theoretical",
+          "statement": "Diversity erodes via a promotion-turnover asymmetry (minorities leak faster than they are built), so its persistence is itself contingent."
+        },
+        {
+          "type": "practical",
+          "statement": "DEI value depends on calibrating experiential variety and on retention, not on demographic headcount targets alone."
+        }
+      ],
+      "approved": true
+    }
+  },
+  {
+    "phase": "orchestrator",
+    "operation": "orchestrator.rehabituate",
+    "mode": "auto",
+    "summary": "cycle 1 -> 2: new BAM is the habit",
+    "ledger_version": 2,
+    "timestamp": "2026-10-08T13:40:00.221049+00:00",
+    "payload": {
+      "completed_cycle": 1,
+      "next_cycle": 2,
+      "bam_id": "mdl-37",
+      "snapshot_version": 2
+    }
+  },
+  {
+    "phase": "disruption",
+    "operation": "disruption.surface",
+    "mode": "auto",
+    "summary": "surfaced 1 disruption candidate(s) across 1 dimension(s)",
+    "ledger_version": 2,
+    "timestamp": "2026-10-08T13:40:00.221062+00:00",
+    "payload": {
+      "candidates": [
+        {
+          "description": "If experiential variety (not demographics) is what matters, does it ALSO erode via turnover \u2014 does the build-leak dynamic apply to experiential variety too?",
+          "pathway": "unsolved_puzzles",
+          "source": "researcher_seed",
+          "dimension": "model",
+          "status": "surfaced",
+          "id": "dsr-42"
+        }
+      ],
+      "by_pathway": {
+        "unsolved_puzzles": 1
+      },
+      "by_dimension": {
+        "model": 1
+      },
+      "approved": true
+    }
+  }
+]

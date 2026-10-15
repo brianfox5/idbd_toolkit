@@ -1,0 +1,83 @@
+{
+  "restrictions": {
+    "year_min": 2008,
+    "headcount_floor": {
+      "firmwide": 50,
+      "mgmt": 10,
+      "topexec": 5
+    },
+    "winsor_roa": "1/99 pct"
+  },
+  "n_firm_years": 62914,
+  "n_firms": 6526,
+  "year_range": [
+    2008,
+    2023
+  ],
+  "direct_diversity_to_roa": {
+    "firmwide": {
+      "n": 40391,
+      "corr_roa__blau_race_firmwide": -0.0312,
+      "corr_roa__prop_f_firmwide": -0.0355,
+      "corr_roa__blau_race_withinfirm": 0.0139
+    },
+    "mgmt": {
+      "n": 40505,
+      "corr_roa__blau_race_mgmt": 0.0247,
+      "corr_roa__prop_f_mgmt": -0.0253,
+      "corr_roa__blau_race_withinfirm": 0.0063
+    },
+    "topexec": {
+      "n": 32021,
+      "corr_roa__blau_race_topexec": 0.0483,
+      "corr_roa__prop_f_topexec": 0.0028,
+      "corr_roa__blau_race_withinfirm": -0.0052
+    }
+  },
+  "roa_by_blau_quartile_firmwide": {
+    "Q1": -0.0187,
+    "Q2": -0.0208,
+    "Q3": -0.0235,
+    "Q4": -0.04
+  },
+  "build_vs_leak_firmwide": {
+    "f": {
+      "promotion_share": 0.4022,
+      "turnover_share": 0.388,
+      "net_build": 0.0143
+    },
+    "black": {
+      "promotion_share": 0.0346,
+      "turnover_share": 0.0523,
+      "net_build": -0.0177
+    },
+    "hispanic": {
+      "promotion_share": 0.0655,
+      "turnover_share": 0.0683,
+      "net_build": -0.0027
+    },
+    "api": {
+      "promotion_share": 0.0705,
+      "turnover_share": 0.0769,
+      "net_build": -0.0063
+    }
+  },
+  "blau_race_trend_firmwide": {
+    "2008": 0.3647,
+    "2009": 0.3664,
+    "2010": 0.3701,
+    "2011": 0.3748,
+    "2012": 0.3783,
+    "2013": 0.3842,
+    "2014": 0.3908,
+    "2015": 0.3992,
+    "2016": 0.4069,
+    "2017": 0.4136,
+    "2018": 0.4201,
+    "2019": 0.4264,
+    "2020": 0.4293,
+    "2021": 0.4363,
+    "2022": 0.4438,
+    "2023": 0.4471
+  }
+}

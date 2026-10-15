@@ -1,0 +1,29 @@
+# systemd unit for the IDBD web workspace.
+# Install: sudo cp deploy/idbd.service /etc/systemd/system/ && sudo systemctl enable --now idbd
+# systemd starts it at boot, restarts it if it stops, and keeps its logs:
+#   sudo systemctl status idbd        sudo journalctl -u idbd -f
+
+[Unit]
+Description=IDBD Toolkit web workspace
+After=network.target
+
+[Service]
+Type=simple
+User=idbd
+Group=idbd
+WorkingDirectory=/opt/idbd
+EnvironmentFile=/etc/idbd/idbd.env
+# One process on purpose: projects are guarded by in-process locks.
+ExecStart=/opt/idbd/.venv/bin/idbd-web
+Restart=on-failure
+RestartSec=5
+
+# Hardening: the app may write only its data directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/idbd
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,37 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+
+# Virtual environments
+.venv
+
+# Local secrets (agent assist API key)
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Researcher projects created in the web app (user data — lives on the server's
+# persistent volume, never in the repository)
+sessions/
+
+# Licensed / proprietary data. The worked example's raw inputs (Revelio Labs
+# workforce data, Compustat) and everything derived row-by-row from them must not
+# be published. Only the inquiry artifacts and aggregate results below are tracked.
+examples/data/*
+!examples/data/README.md
+!examples/data/final_ledger.json
+!examples/data/final_inquiry_log.json
+!examples/data/exploration_result.json
+!examples/data/fit_result.json
+
+# Copyrighted reference articles (PDFs) used in the worked example
+examples/references/
+examples/*ADDITIONAL REFERENCES*/

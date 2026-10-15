@@ -1,0 +1,1308 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IDBD Toolkit</title>
+<style>
+  :root {
+    --surface-1:#fcfcfb; --page:#f9f9f7; --ink:#0b0b0b; --ink-2:#52514e;
+    --muted:#898781; --grid:#e1e0d9; --baseline:#c3c2b7; --series-1:#2a78d6;
+    --cat-1:#2a78d6; --cat-2:#eb6834; --cat-3:#1baf7a;
+    --good:#0ca30c; --critical:#d03b3b; --border:rgba(11,11,11,.10);
+    --hilite:rgba(42,120,214,.10);
+  }
+  :root[data-theme="dark"] {
+    --surface-1:#1a1a19; --page:#0d0d0d; --ink:#fff; --ink-2:#c3c2b7;
+    --muted:#898781; --grid:#2c2c2a; --baseline:#383835; --series-1:#3987e5;
+    --cat-1:#3987e5; --cat-2:#d95926; --cat-3:#199e70;
+    --good:#0ca30c; --critical:#d03b3b; --border:rgba(255,255,255,.10);
+    --hilite:rgba(57,135,229,.16);
+  }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:14px; line-height:1.5; }
+  button { font:inherit; cursor:pointer; }
+  header { display:flex; align-items:center; gap:.9rem; padding:.7rem 1.25rem;
+    border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--page); z-index:5; }
+  header h1 { font-size:1.05rem; margin:0; }
+  header .sub { color:var(--ink-2); font-size:.82rem; }
+  header .spacer { flex:1; }
+  .pill { font-size:.75rem; padding:.15rem .55rem; border-radius:999px; border:1px solid var(--border);
+    color:var(--ink-2); background:var(--surface-1); white-space:nowrap; }
+  .btn { background:var(--surface-1); color:var(--ink); border:1px solid var(--border);
+    border-radius:6px; padding:.35rem .75rem; }
+  .btn.primary { background:var(--series-1); color:#fff; border-color:transparent; }
+  .btn.danger { color:var(--critical); }
+  .btn.small { padding:.15rem .5rem; font-size:.78rem; }
+  .btn:disabled { opacity:.5; cursor:default; }
+
+  .layout { display:grid; grid-template-columns:230px minmax(0,1fr) 360px; gap:1rem;
+    padding:1rem 1.25rem; max-width:1500px; margin:0 auto; align-items:start; }
+  @media (max-width:1100px){ .layout { grid-template-columns:1fr; } }
+  .panel { background:var(--surface-1); border:1px solid var(--border); border-radius:10px; padding:.9rem 1rem; }
+  .sticky { position:sticky; top:4rem; max-height:calc(100vh - 5rem); overflow:auto; }
+  h2 { font-size:.78rem; margin:0 0 .6rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-2); }
+  h3 { font-size:1.15rem; margin:0; }
+  .note { color:var(--muted); font-size:.78rem; }
+  .desc { color:var(--ink-2); font-size:.85rem; }
+
+  /* phase rail */
+  .rail { list-style:none; margin:0; padding:0; }
+  .rail li { display:flex; gap:.6rem; align-items:flex-start; padding:.45rem .4rem; border-radius:6px; cursor:pointer; }
+  .rail li:hover { background:var(--hilite); }
+  .rail li.sel { background:var(--hilite); outline:1px solid var(--series-1); }
+  .rail .dot { width:1.35rem; height:1.35rem; flex:none; border-radius:50%; border:2px solid var(--baseline);
+    display:grid; place-items:center; font-size:.7rem; font-weight:700; color:var(--muted); margin-top:.05rem; }
+  .rail .done .dot, .rail .carried .dot { background:var(--good); border-color:var(--good); color:#fff; }
+  .rail .carried .dot { background:transparent; color:var(--good); }
+  .rail .active .dot { border-color:var(--series-1); color:var(--series-1); box-shadow:0 0 0 3px var(--hilite); }
+  .rail .lbl { font-weight:600; font-size:.9rem; }
+  .rail .gl { color:var(--muted); font-size:.74rem; line-height:1.25; }
+  .rail .sep { border-top:1px dashed var(--border); margin:.35rem 0; padding:0; cursor:default; }
+  .rail .sep:hover { background:none; }
+
+  /* workspace */
+  .tabs { display:flex; gap:.25rem; margin-bottom:.75rem; }
+  .tabs button { background:none; border:0; border-bottom:2px solid transparent; padding:.35rem .7rem; color:var(--ink-2); }
+  .tabs button.on { color:var(--ink); border-color:var(--series-1); font-weight:600; }
+  .stagehead { display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap; margin-bottom:.25rem; }
+  .nextbar { display:flex; align-items:center; gap:.6rem; background:var(--hilite); border-radius:8px;
+    padding:.5rem .75rem; margin:.6rem 0 1rem; font-size:.87rem; }
+  .card { border:1px solid var(--border); border-radius:10px; padding:.8rem .95rem; margin-bottom:.8rem; background:var(--page); }
+  .card.next { border-color:var(--series-1); box-shadow:0 0 0 3px var(--hilite); }
+  .card .top { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; }
+  .card .top .t { font-weight:600; flex:1; min-width:12rem; }
+  .card .status { font-size:.75rem; color:var(--muted); }
+  .card .status.ok { color:var(--good); }
+  .card .why { font-size:.8rem; color:var(--ink-2); margin:.3rem 0 .2rem; }
+  .card .last { font-size:.8rem; color:var(--muted); margin-top:.2rem; }
+  .mode { font-size:.66rem; padding:.08rem .4rem; border-radius:4px; color:#fff; text-transform:uppercase; letter-spacing:.03em; }
+  .mode.auto { background:var(--cat-3); } .mode.checkpoint { background:var(--cat-2); }
+  .mode.interactive { background:var(--cat-1); }
+  .form { margin-top:.6rem; display:none; }
+  .card.open .form { display:block; }
+  .field { margin:.55rem 0; }
+  .field > label { display:block; font-size:.8rem; color:var(--ink-2); margin-bottom:.2rem; font-weight:500; }
+  .field > label .req { color:var(--critical); }
+  .field .hint { font-size:.74rem; color:var(--muted); margin-top:.15rem; }
+  input[type=text], input[type=number], input[type=password], textarea, select {
+    width:100%; background:var(--surface-1); color:var(--ink); border:1px solid var(--border);
+    border-radius:6px; padding:.4rem .5rem; font:inherit; }
+  textarea { min-height:3.6rem; resize:vertical; }
+  textarea.code { font-family:ui-monospace,monospace; font-size:.8rem; }
+  .checks { display:flex; flex-direction:column; gap:.25rem; max-height:14rem; overflow:auto;
+    border:1px solid var(--border); border-radius:6px; padding:.4rem .5rem; background:var(--surface-1); }
+  .checks label { display:flex; gap:.45rem; align-items:flex-start; font-size:.84rem; }
+  .checks input { margin-top:.25rem; }
+  .rows .row { border:1px dashed var(--border); border-radius:8px; padding:.3rem .6rem .5rem; margin:.4rem 0; position:relative; }
+  .rows .row .rm { position:absolute; right:.4rem; top:.3rem; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+  .actions { display:flex; gap:.5rem; align-items:center; margin-top:.7rem; }
+  .result { margin-top:.6rem; }
+  .result pre { background:var(--surface-1); border:1px solid var(--border); border-radius:6px; padding:.5rem;
+    overflow:auto; font-size:.76rem; max-height:14rem; margin:.3rem 0 0; }
+  .err { color:var(--critical); font-size:.84rem; margin-top:.4rem; white-space:pre-wrap; }
+
+  /* belief panel */
+  .bam { font-size:.88rem; }
+  .bam .st { font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .commit { padding:.55rem 0; border-top:1px solid var(--border); }
+  .commit:first-child { border-top:0; }
+  .commit.flash { animation:flash 2.4s ease-out; }
+  @keyframes flash { from { background:var(--hilite); } to { background:transparent; } }
+  .commit .row { display:flex; gap:.5rem; align-items:flex-start; }
+  .commit .stmt { flex:1; font-size:.84rem; }
+  .commit .val { font-variant-numeric:tabular-nums; font-weight:600; }
+  .delta { font-size:.72rem; font-variant-numeric:tabular-nums; color:var(--ink-2); white-space:nowrap; }
+  .meter { position:relative; height:8px; background:var(--grid); border-radius:4px; margin:.3rem 0 .1rem; }
+  .meter > span { position:absolute; left:0; top:0; bottom:0; background:var(--series-1); border-radius:4px; transition:width .9s ease; }
+  .meter > i { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink-2); opacity:.55; }
+  .badge { font-size:.66rem; padding:.05rem .35rem; border-radius:999px; border:1px solid var(--border); color:var(--ink-2); white-space:nowrap; }
+  .doubt { padding:.35rem 0; border-top:1px solid var(--border); font-size:.82rem; }
+  .doubt:first-child { border-top:0; }
+  details > summary { cursor:pointer; color:var(--series-1); font-size:.78rem; }
+  .side-sec { margin-top:1rem; }
+  svg text { fill:var(--muted); font-size:10px; }
+
+  /* log */
+  .ev { display:grid; grid-template-columns:2.5rem 6.5rem 1fr; gap:.5rem; padding:.35rem 0;
+    border-top:1px solid var(--border); font-size:.83rem; align-items:start; }
+  .ev:first-child { border-top:0; }
+  .ev .v { color:var(--muted); font-variant-numeric:tabular-nums; }
+  .cyc { margin:.8rem 0 .2rem; font-size:.75rem; font-weight:600; color:var(--ink-2); text-transform:uppercase; letter-spacing:.05em; }
+
+  /* prompt dialog + toasts */
+  dialog { border:1px solid var(--border); border-radius:12px; padding:0; max-width:640px; width:92vw;
+    background:var(--surface-1); color:var(--ink); }
+  dialog::backdrop { background:rgba(0,0,0,.35); }
+  dialog .hd { padding:.9rem 1.1rem .4rem; display:flex; gap:.6rem; align-items:center; }
+  dialog .bd { padding:0 1.1rem .4rem; }
+  dialog .q { white-space:pre-wrap; background:var(--page); border:1px solid var(--border); border-radius:8px;
+    padding:.6rem .75rem; font-size:.86rem; margin:.3rem 0 .6rem; }
+  dialog .ft { padding:.6rem 1.1rem 1rem; display:flex; gap:.5rem; justify-content:flex-end; }
+  #toasts { position:fixed; right:1rem; bottom:1rem; display:flex; flex-direction:column; gap:.5rem; z-index:20; max-width:420px; }
+  .toast { background:var(--surface-1); border:1px solid var(--border); border-left:4px solid var(--series-1);
+    border-radius:8px; padding:.55rem .8rem; font-size:.83rem; box-shadow:0 4px 18px rgba(0,0,0,.12); }
+  .toast.warn { border-left-color:var(--cat-2); } .toast.bad { border-left-color:var(--critical); }
+  .toast.ok { border-left-color:var(--good); }
+  /* projects landing page */
+  .home { max-width:1150px; margin:0 auto; padding:1.5rem 1.25rem 3rem; }
+  .home-head { display:flex; align-items:flex-end; gap:1rem; flex-wrap:wrap; margin-bottom:1.1rem; }
+  .home-head .t { flex:1; min-width:16rem; }
+  .home-head h3 { font-size:1.45rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1rem; }
+  .proj { display:flex; flex-direction:column; gap:.35rem; }
+  .proj.cur { border-color:var(--series-1); }
+  .proj .nm { display:flex; align-items:center; gap:.5rem; font-weight:600; font-size:1.02rem; }
+  .proj .bamsnip { font-size:.8rem; color:var(--ink-2); border-left:3px solid var(--grid); padding-left:.5rem; }
+  .proj .acts { display:flex; gap:.4rem; margin-top:auto; padding-top:.6rem; align-items:center; }
+  .proj .acts .sp { flex:1; }
+  .newproj { margin-bottom:1rem; border-color:var(--series-1); }
+  .trash { margin-top:1.6rem; }
+  .trash table { width:100%; border-collapse:collapse; font-size:.84rem; margin-top:.5rem; }
+  .trash td { padding:.35rem .4rem; border-top:1px solid var(--border); }
+  .trash td:last-child { text-align:right; }
+  .proj.ro { background:var(--page); }
+  .ro-banner { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; border:1px solid var(--cat-2);
+    border-radius:8px; padding:.55rem .8rem; margin-bottom:.75rem; font-size:.86rem; }
+  .ro-banner .t { flex:1; min-width:14rem; }
+  body.ro [data-run], body.ro #c-run { opacity:.45; pointer-events:none; }
+  body.ro .uploads .drop, body.ro .uploads [data-rm] { display:none; }
+  .uploads .drop { border:2px dashed var(--baseline); border-radius:10px; padding:1rem; text-align:center;
+    color:var(--ink-2); font-size:.86rem; transition:background .15s, border-color .15s; }
+  .uploads .drop.over { border-color:var(--series-1); background:var(--hilite); }
+  .uploads .drop .btn { margin-left:.25rem; }
+  .uploads ul { list-style:none; margin:.5rem 0 0; padding:0; }
+  .uploads li { display:flex; align-items:center; gap:.5rem; padding:.3rem .2rem; border-bottom:1px solid var(--border); font-size:.85rem; }
+  .uploads li .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .uploads li a { color:var(--ink); }
+  .assist { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.55rem 0 .2rem;
+    padding:.5rem .6rem; border:1px dashed var(--series-1); border-radius:8px; background:var(--hilite); }
+  .assist input { flex:1 1 14rem; }
+  .assist .note { width:100%; }
+  .agent-notes { border-left:3px solid var(--series-1); padding:.35rem .6rem; margin:.4rem 0; font-size:.84rem; color:var(--ink-2); }
+  body.ro .assist { display:none; }
+  .login-box { max-width:380px; margin:3rem auto; }
+  .users { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .users th { text-align:left; color:var(--ink-2); font-weight:600; padding:.35rem .4rem; border-bottom:1px solid var(--border); }
+  .users td { padding:.35rem .4rem; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .users tr.off td { opacity:.55; }
+  .empty { text-align:center; padding:2.5rem 1rem; color:var(--ink-2); }
+</style>
+</head>
+<body>
+<header>
+  <h1>IDBD Toolkit</h1>
+  <button class="btn small" id="to-home" hidden title="All projects">← Projects</button>
+  <strong id="proj-name" hidden></strong>
+  <span class="pill" id="cycle-pill" hidden>cycle —</span>
+  <span class="spacer"></span>
+  <span class="note" id="live" title="Polls the server for changes made by other clients">● live</span>
+  <button class="btn small" id="agent-btn" hidden title="Choose the model and key used by “Draft with agent”">⚙ Agent</button>
+  <span id="user-area" style="display:flex;gap:.4rem;align-items:center"></span>
+  <button class="btn small" id="theme">◐ theme</button>
+</header>
+
+<div class="home" id="home" hidden></div>
+<div class="home" id="login" hidden></div>
+<div class="home" id="admin" hidden></div>
+
+<div class="layout" id="workspace" hidden>
+  <!-- phase rail -->
+  <nav class="panel sticky">
+    <h2>Inquiry cycle</h2>
+    <ul class="rail" id="rail"></ul>
+  </nav>
+
+  <!-- workspace -->
+  <main>
+    <div class="ro-banner" id="ro-banner" hidden>
+      <span class="pill">read-only</span>
+      <span class="t" id="ro-text"></span>
+      <button class="btn primary small" id="ro-copy">Make an editable copy</button>
+      <button class="btn primary small" id="ro-login" hidden>Log in</button>
+    </div>
+    <div class="tabs">
+      <button data-tab="guided" class="on">Guided</button>
+      <button data-tab="log">Inquiry log</button>
+      <button data-tab="console">Tool console</button>
+    </div>
+    <section class="panel" id="tab-guided"></section>
+    <section class="panel" id="tab-log" hidden></section>
+    <section class="panel" id="tab-console" hidden></section>
+  </main>
+
+  <!-- belief state -->
+  <aside class="panel sticky">
+    <h2>Best Achievable Model</h2>
+    <div class="bam" id="bam">—</div>
+    <div class="side-sec" id="wm"></div>
+    <div class="side-sec"><h2>Credences</h2><div id="commits"></div></div>
+    <div class="side-sec"><h2>Open doubts</h2><div id="doubts"></div></div>
+  </aside>
+</div>
+
+<dialog id="prompt">
+  <div class="hd"><span class="mode" id="p-mode"></span><strong id="p-title"></strong></div>
+  <div class="bd">
+    <div class="note" id="p-sub"></div>
+    <div class="q" id="p-q"></div>
+    <div id="p-input"></div>
+    <details id="p-ctx"><summary>context the core sent</summary><pre class="note" style="white-space:pre-wrap"></pre></details>
+  </div>
+  <div class="ft" id="p-ft"></div>
+</dialog>
+<div id="toasts"></div>
+
+<script>
+// ---------- helpers ----------
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = x => Math.round(x*100)+'%';
+const trunc = (s, n=70) => { s = String(s||''); return s.length>n ? s.slice(0,n-1)+'…' : s; };
+// URLs are relative (no leading slash) so the app works under any path prefix;
+// the server sets <base href> accordingly. Every request carries the header the
+// server requires on mutations (a cross-site form cannot set it).
+async function api(url, opts={}){
+  const headers = {'X-Requested-With':'idbd', ...(opts.headers||{})};
+  const r = await fetch(url.replace(/^\//, ''), {...opts, headers, credentials:'same-origin'});
+  const j = await r.json().catch(()=>({}));
+  if(r.status===401 && S.me && S.me.user){ S.me.user = null; S.me.can_edit = false; renderUser(); }
+  return {ok:r.ok, status:r.status, body:j};
+}
+// Per-project endpoint for the open project.
+const pa = path => 'api/p/'+encodeURIComponent(S.slug)+'/'+path;
+// May the current user change the open project?
+const canEdit = () => !!(S.me && S.me.can_edit && S.project && !S.project.read_only);
+function toast(msg, kind=''){
+  const t = document.createElement('div'); t.className = 'toast '+kind; t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(()=>t.remove(), 7000);
+}
+$('#theme').onclick = () => { const r=document.documentElement; r.dataset.theme = r.dataset.theme==='dark'?'light':'dark'; };
+
+// ---------- app state ----------
+const S = { me:null, slug:null, project:null, agent:null, assist:null, agentNotes:{}, drafts:{}, draftsFor:undefined, view:'', editing:null, newOpen:false, homeTok:'', sessions:null, state:null, progress:null, log:[], tools:{}, selected:null, prev:{}, token:'', busy:false, open:{} };
+
+const MODE_WHY = {
+  auto: 'Runs on its own (human-on-the-loop): you review the result afterwards.',
+  checkpoint: 'Runs, then pauses at the boundary for your go/no-go.',
+  interactive: 'Your judgment is the input (human-in-the-loop).',
+};
+
+// Fields that read better as multi-line text.
+const LONG = new Set(['description','statement','rationale','summary','assessment','note','bam_description',
+  'literature_summary','researcher_summary','belief_summary','initiating_anomaly','proposed_statement',
+  'data_picture','seed_anomaly']);
+const LABELS = {
+  'record_brief.initiating_anomaly': 'what prompted this inquiry (optional)',
+  'disruption_surface.seed_anomaly': 'initiating anomaly',
+  'disruption_surface.seed_pathway': 'anomaly pathway',
+};
+const HINTS = {
+  seed_anomaly: 'The surprise that fails to accord with the baseline beliefs. Prefilled from the brief if you noted one at Intake; edit or replace it here.',
+  seed_pathway: 'How the anomaly arrives — Methods: new ways of doing · Theories: perceived gaps · Model: unsolved puzzles · Phenomenon: unexpected behavior · Data: anomalous observations (default).',
+  initiating_anomaly: 'Optional. Kept as a record of what started the inquiry and carried forward to seed Disruption (step 1). The baseline is written without it — the habit before the surprise.',
+  magnitude: 'Qualitative strength of the doubt: mild ×0.7, moderate ×0.5, strong ×0.33, severe ×0.2 on the odds.',
+  bayes_factor: 'Overrides magnitude. <1 weakens, >1 strengthens.',
+  target_strength: 'Overrides both: set the credence directly.',
+  decision: 'converge → Enrichment; refine_hypotheses → back to Design; new_prototype → back to Development.',
+  sufficient: 'Is the current BAM still adequate? "No" opens the inquiry.',
+  proposed_statement: 'You will be asked to refine this framing before it is recorded.',
+  references: 'One citation per line — paste straight from Bookends or any reference manager.',
+};
+
+// ---------- data loading ----------
+function currentCycleEvents(){
+  const i = S.log.map(e=>e.operation).lastIndexOf('orchestrator.rehabituate');
+  return S.log.slice(i+1);
+}
+function lastPayload(op){
+  const ev = currentCycleEvents().filter(e=>e.operation===op && e.payload.approved!==false);
+  return ev.length ? ev[ev.length-1].payload : null;
+}
+async function refresh({keepSel=true}={}){
+  const [st, pr, lg, ss, dr] = await Promise.all([api(pa('state')), api(pa('progress')), api(pa('log')),
+    api('api/sessions'), api(pa('drafts'))]);
+  if(!st.ok){ toast(`Project unavailable: ${st.body.detail||st.status}`, 'warn'); return goHome(); }
+  S.sessions = ss.body;
+  S.project = (ss.body.sessions||[]).find(m => m.slug===S.slug) || S.project;
+  if(dr.ok && S.draftsFor !== S.slug){ S.drafts = dr.body; S.draftsFor = S.slug; }  // reload only on project change
+  const wasActive = S.progress && S.progress.active_stage;
+  S.state = st.body; S.progress = pr.body; S.log = lg.body;
+  // follow the inquiry: when the stage being worked on completes, move to the next one
+  const followed = keepSel && wasActive && S.selected===wasActive && S.progress.active_stage!==wasActive;
+  if(!keepSel || !S.selected || followed) S.selected = S.progress.active_stage || 'advance';
+  if(followed) toast(`${S.progress.stages.find(x=>x.key===wasActive).label} complete → on to ${
+    S.progress.stages.find(x=>x.key===S.selected).label}`, 'ok');
+  const v = await api(pa('version')); S.token = JSON.stringify(v.body);
+  render();
+}
+async function loadTools(){
+  const r = await api('api/tools'); r.body.forEach(t => S.tools[t.name]=t);
+}
+
+// ---------- rendering ----------
+function render(){ renderHeader(); renderRail(); renderGuided(); renderBelief(); renderLog(); }
+
+function renderHeader(){
+  $('#cycle-pill').textContent = 'cycle '+S.progress.cycle;
+  const cur = S.project;
+  $('#proj-name').textContent = cur ? cur.name : '';
+  $('#proj-name').title = cur && cur.read_only ? 'Read-only: served from the original worked-example files'
+    : 'Saved automatically after every step';
+  const ro = !canEdit();
+  document.body.classList.toggle('ro', ro); $('#ro-banner').hidden = !ro;
+  const anon = S.me && !S.me.can_edit;
+  $('#ro-text').textContent = anon
+    ? 'You are viewing the demo. Browse freely; log in to run your own inquiries.'
+    : 'This is the worked example, kept exactly as the analysis produced it. Browse freely; to run steps, work on a copy.';
+  $('#ro-copy').hidden = anon; $('#ro-login').hidden = !anon;
+}
+
+function renderRail(){
+  const items = S.progress.stages.map((s,i) => {
+    const sym = s.status==='done' ? '✓' : s.status==='carried' ? '↺' : (i<=1 ? '·' : i-1);
+    const sep = s.key==='disruption' || s.key==='advance' ? '<li class="sep"></li>' : '';
+    return `${sep}<li class="${s.status} ${S.selected===s.key?'sel':''}" data-k="${s.key}">
+      <span class="dot">${sym}</span>
+      <span><div class="lbl">${esc(s.label)}</div><div class="gl">${esc(s.gloss)}</div></span></li>`;
+  });
+  $('#rail').innerHTML = items.join('');
+  $$('#rail li[data-k]').forEach(li => li.onclick = () => { S.selected = li.dataset.k; switchTab('guided'); render(); });
+}
+
+function renderGuided(){
+  const st = S.progress.stages.find(s=>s.key===S.selected);
+  const nx = S.progress.next_step;
+  const statusTxt = {done:'complete', carried:'carried over from the previous cycle', active:'in progress', pending:'not yet reached'}[st.status];
+  let h = `<div class="stagehead"><h3>${esc(st.label)}</h3><span class="note">${esc(st.gloss)} · ${statusTxt}</span></div>`;
+  if(nx){
+    const nst = S.progress.stages.find(s=>s.key===nx.stage);
+    h += `<div class="nextbar"><span>Next suggested step:</span><strong>${esc(nst.label)} → ${esc(nx.label)}</strong>
+      <span class="mode ${nx.mode}">${nx.mode}</span><span class="spacer" style="flex:1"></span>
+      ${nx.stage!==S.selected?`<button class="btn small primary" id="goto-next">Go</button>`:''}</div>`;
+  }
+  if(st.status==='carried')
+    h += `<p class="desc">In cycle ${S.progress.cycle}, the BAM and prior commitments are inherited from the previous
+      cycle's Enrichment — the new habit. You can still run these steps, but the loop resumes at Disruption.</p>`;
+  st.steps.forEach(step => { h += stepCard(st, step, nx); });
+  $('#tab-guided').innerHTML = h;
+  if($('#goto-next')) $('#goto-next').onclick = () => { S.selected = nx.stage; S.open[nx.tool]=true; render(); };
+  st.steps.forEach(step => wireCard(step));
+}
+
+function stepCard(st, step, nx){
+  const tool = S.tools[step.tool]; if(!tool) return '';
+  const isNext = nx && nx.tool===step.tool && nx.stage===st.key;
+  const open = S.open[step.tool] ?? (isNext);
+  const status = step.runs ? `<span class="status ok">✓ ${step.runs>1?step.runs+' runs':'done'}</span>`
+    : step.done ? '<span class="status ok">carried</span>'
+    : `<span class="status">${step.required?'required':'optional'}${step.repeatable?' · repeatable':''}</span>`;
+  return `<div class="card ${isNext?'next':''} ${open?'open':''}" id="card-${step.tool}">
+    <div class="top"><span class="t">${esc(step.label)}</span><span class="mode ${step.mode}">${step.mode}</span>${status}
+      <button class="btn small" data-toggle="${step.tool}">${open?'Hide':(step.runs&&!step.repeatable?'Redo':'Open')}</button></div>
+    <div class="why">${esc(MODE_WHY[step.mode])}</div>
+    ${step.last_summary?`<div class="last">Last: ${esc(step.last_summary)}</div>`:''}
+    <div class="form"><div class="desc">${esc(tool.description)}</div>
+      ${Object.keys((tool.parameters||{}).properties||{}).length ? assistBar(step.tool) : ''}
+      <div class="agent-notes" data-notes="${step.tool}" ${S.agentNotes[step.tool]?'':'hidden'}>${S.agentNotes[step.tool]||''}</div>
+      <div class="fields" data-tool="${step.tool}"></div>
+      <div class="actions"><button class="btn primary" data-run="${step.tool}">Run step</button>
+        <button class="btn small" data-clear title="Empty this form (your typing is otherwise kept)">Clear form</button>
+        <span class="note" data-msg="${step.tool}"></span></div>
+      <div class="result" data-res="${step.tool}"></div></div></div>`;
+}
+
+// ---------- agent: bring your own key + provider ----------
+// The researcher's provider/model/key live in this browser only (sessionStorage,
+// or localStorage if they tick "remember"); the key travels with each draft
+// request and the server never stores it.
+const AGENT_KEY = 'idbd.agent';
+function loadAgent(){
+  try { return JSON.parse(localStorage.getItem(AGENT_KEY) || sessionStorage.getItem(AGENT_KEY) || 'null'); }
+  catch(e){ return null; }
+}
+function saveAgent(a){
+  localStorage.removeItem(AGENT_KEY); sessionStorage.removeItem(AGENT_KEY);
+  (a.remember ? localStorage : sessionStorage).setItem(AGENT_KEY, JSON.stringify(a));
+  S.agent = a;
+}
+const providerSpec = name => ((S.assist && S.assist.providers) || []).find(p => p.name===name);
+function agentChoice(){
+  const a = S.agent || {}, spec = providerSpec(a.provider || 'anthropic') || {};
+  return {name: spec.name || 'anthropic', model: a.model || spec.default_model || '',
+          api_key: a.api_key || null,
+          // only endpoints that need one get a base URL (never send OpenAI to Ollama's address)
+          base_url: spec.needs_base_url ? (a.base_url || spec.default_base_url || null) : null};
+}
+function agentReady(){
+  const c = agentChoice(), spec = providerSpec(c.name);
+  if(!spec || !c.model) return false;
+  if(spec.needs_base_url && !c.base_url) return false;
+  return !!(c.api_key || spec.server_key || spec.key_optional);
+}
+function agentLabel(){
+  const c = agentChoice(), spec = providerSpec(c.name);
+  return spec ? `${spec.label.replace(/ \(.*/, '')} · ${c.model || 'choose a model'}` : 'not set up';
+}
+
+function openAgentSettings(){
+  return new Promise(resolve => {
+    const dlg = $('#prompt'), a = S.agent || {}, provs = (S.assist && S.assist.providers) || [];
+    $('#p-mode').className = 'mode auto'; $('#p-mode').textContent = 'agent';
+    $('#p-title').textContent = 'Agent settings';
+    $('#p-sub').textContent = 'Choose the model that drafts step inputs. Bring your own API key: it is kept in this browser and sent only with draft requests; the server never stores it.';
+    $('#p-q').hidden = true; $('#p-ctx').hidden = true;
+    $('#p-input').innerHTML = `
+      <div class="field"><label>Provider</label><select id="ag-prov">${provs.map(p =>
+        `<option value="${esc(p.name)}">${esc(p.label)}</option>`).join('')}</select>
+        <div class="hint" id="ag-prov-hint"></div></div>
+      <div class="field" id="ag-url-f"><label>Base URL</label><input type="text" id="ag-url" placeholder="http://localhost:11434/v1">
+        <div class="hint">The endpoint's OpenAI-compatible API, e.g. Ollama <code>http://localhost:11434/v1</code> or OpenRouter <code>https://openrouter.ai/api/v1</code>. Note: the <em>server</em> makes this call, so “localhost” means the machine the app runs on.</div></div>
+      <div class="field"><label>API key</label><input type="password" id="ag-key" autocomplete="off" placeholder="paste your key">
+        <div class="hint" id="ag-key-hint"></div></div>
+      <div class="field"><label>Model</label><div style="display:flex;gap:.4rem"><input type="text" id="ag-model" list="ag-models" style="flex:1">
+        <button class="btn small" type="button" id="ag-list">List models</button></div><datalist id="ag-models"></datalist>
+        <div class="hint" id="ag-model-hint"></div></div>
+      <label style="display:flex;gap:.4rem;align-items:center;font-size:.85rem"><input type="checkbox" id="ag-rem"> Remember on this device (otherwise forgotten when the browser closes)</label>`;
+    const sel = $('#ag-prov');
+    const show = () => {
+      const spec = providerSpec(sel.value) || {};
+      $('#ag-url-f').hidden = !spec.needs_base_url;
+      $('#ag-prov-hint').innerHTML = spec.key_url ? `Get a key: <a href="${esc(spec.key_url)}" target="_blank" rel="noopener">${esc(spec.key_url)}</a>` : '';
+      $('#ag-key-hint').textContent = spec.server_key ? 'Optional here: this server has its own key for this provider.'
+        : spec.key_optional ? 'Optional for local servers such as Ollama.' : '';
+      $('#ag-model').placeholder = spec.default_model || 'e.g. llama3.1';
+      $('#ag-model-hint').textContent = spec.default_model
+        ? `Default: ${spec.default_model}. Use “List models” to see what your key can use.` : 'Use “List models” to see what the endpoint offers.';
+      if(!$('#ag-url').value && spec.default_base_url) $('#ag-url').value = spec.default_base_url;
+    };
+    sel.value = a.provider || 'anthropic'; $('#ag-url').value = a.base_url || '';
+    $('#ag-key').value = a.api_key || ''; $('#ag-model').value = a.model || ''; $('#ag-rem').checked = !!a.remember;
+    sel.onchange = () => { $('#ag-model').value = ''; $('#ag-models').innerHTML = ''; show(); };
+    show();
+    const current = () => ({provider: sel.value, model: $('#ag-model').value.trim(), api_key: $('#ag-key').value.trim(),
+                            base_url: (providerSpec(sel.value)||{}).needs_base_url ? $('#ag-url').value.trim() : '',
+                            remember: $('#ag-rem').checked});
+    $('#ag-list').onclick = async () => {
+      const c = current(); $('#ag-list').disabled = true;
+      const r = await api('api/assist/models', {method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({name:c.provider, api_key:c.api_key||null, base_url:c.base_url||null})});
+      $('#ag-list').disabled = false;
+      if(!r.ok) return toast(r.body.detail || 'Could not list models', 'bad');
+      $('#ag-models').innerHTML = r.body.models.map(m => `<option value="${esc(m)}">`).join('');
+      toast(`${r.body.models.length} models available — pick one in the Model box`, 'ok');
+    };
+    $('#p-ft').innerHTML = `<button class="btn" data-a="clear" title="Forget the saved key and settings">Forget key</button>
+      <span style="flex:1"></span><button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="save">Save</button>`;
+    const close = v => { dlg.close(); $('#p-q').hidden = false; resolve(v); };
+    $$('#p-ft button').forEach(b => b.onclick = () => {
+      if(b.dataset.a==='save'){ saveAgent(current()); renderAgentButton(); toast(`Agent: ${agentLabel()}`, 'ok'); close(true); }
+      else if(b.dataset.a==='clear'){ localStorage.removeItem(AGENT_KEY); sessionStorage.removeItem(AGENT_KEY); S.agent = null;
+        renderAgentButton(); toast('Agent settings forgotten', 'ok'); close(false); }
+      else close(false);
+    });
+    dlg.oncancel = e => { e.preventDefault(); close(false); };
+    dlg.showModal();
+  });
+}
+function renderAgentButton(){
+  const b = $('#agent-btn'); b.hidden = !(S.me && S.me.can_edit);
+  b.textContent = '⚙ Agent: ' + (agentReady() ? agentLabel() : 'set up');
+  $$('[data-agent-label]').forEach(e => e.textContent = agentReady() ? `Using ${agentLabel()}` : 'Set up a model in Agent settings first.');
+}
+
+function assistBar(tool){
+  return `<div class="assist">
+    <button class="btn small primary" type="button" data-assist="${tool}"
+      title="Drafts this form from the brief, its reference files and the belief state. Nothing is recorded until you run the step.">✦ Draft with agent</button>
+    <input type="text" data-guidance="${tool}" placeholder="Optional guidance, e.g. “emphasise patient outcomes”">
+    <span class="note" data-agent-label>${agentReady() ? 'Using '+esc(agentLabel()) : 'Set up a model in Agent settings first.'}</span>
+    <span class="note" data-assist-msg="${tool}"></span></div>`;
+}
+
+async function runAssist(step, box, card){
+  if(!agentReady() && !(await openAgentSettings() && agentReady())) return;
+  const tool = S.tools[step.tool], btn = $('[data-assist]', card), msg = $('[data-assist-msg]', card);
+  let current; try { current = collect(box, tool); } catch(e){ current = undefined; }
+  btn.disabled = true; S.busy = true;
+  const label = agentLabel(), t0 = Date.now(), tick = setInterval(() =>
+    msg.textContent = `Drafting with ${label}… ${Math.round((Date.now()-t0)/1000)}s (often 30–90 s with documents)`, 1000);
+  try {
+    const r = await api(pa('assist/'+encodeURIComponent(step.tool)), {method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({guidance: $('[data-guidance]', card).value, provider: agentChoice(),
+                            draft: Object.keys(current||{}).length ? current : null})});
+    if(!r.ok){ msg.textContent = ''; toast(r.body.detail || ('Agent error '+r.status), 'bad'); return; }
+    S.drafts[step.tool] = r.body.args;
+    buildForm(box, tool, r.body.args);
+    box.dispatchEvent(new Event('change'));  // persist the draft like typed input
+    const u = r.body.usage || {};
+    S.agentNotes[step.tool] = `<strong>Agent notes</strong> — ${esc(r.body.notes||'')}`
+      + (r.body.skipped && r.body.skipped.length ? `<div class="note">Note: ${esc(r.body.skipped.join('; '))}</div>` : '')
+      + `<div class="note">${esc(r.body.provider)} · ${esc(r.body.model)} · ${u.input_tokens||0} in / ${u.output_tokens||0} out tokens. Review and edit below, then run the step.</div>`;
+    const n = $('[data-notes]', card); n.innerHTML = S.agentNotes[step.tool]; n.hidden = false;
+    msg.textContent = ''; toast('Draft ready — review it before running the step', 'ok');
+  } finally { clearInterval(tick); btn.disabled = false; S.busy = false; }
+}
+
+function wireCard(step){
+  const card = $('#card-'+step.tool); if(!card) return;
+  $('[data-toggle]', card).onclick = () => { S.open[step.tool] = !card.classList.contains('open'); renderGuided(); };
+  if(!card.classList.contains('open')) return;
+  const box = $('.fields', card), tool = S.tools[step.tool];
+  buildForm(box, tool, S.drafts[step.tool] || recordedArgs(step.tool));
+  watchDraft(box, tool);
+  const ab = $('[data-assist]', card); if(ab) ab.onclick = () => runAssist(step, box, card);
+  $('[data-clear]', card).onclick = () => {
+    delete S.drafts[step.tool];
+    if(canEdit()) api(pa('drafts/'+encodeURIComponent(step.tool)), {method:'PUT',
+      headers:{'content-type':'application/json'}, body:JSON.stringify({args:null})});
+    buildForm(box, tool);
+  };
+  $('[data-run]', card).onclick = () => runTool(step.tool, () => collect(box, S.tools[step.tool]), card);
+}
+
+// ---------- belief panel ----------
+function renderBelief(){
+  const s = S.state;
+  $('#bam').innerHTML = s.bam ? `<div class="st">${esc(s.bam.status)}</div>${esc(s.bam.description)}`
+    : '<span class="note">No BAM yet — establish a baseline.</span>';
+  const wm = s.working_model;
+  $('#wm').innerHTML = wm ? `<h2>Working model</h2><div class="bam"><div class="st">${esc(wm.status)}${
+      wm.spec && wm.spec.internally_consistent===false ? ' · <span style="color:var(--critical)">inconsistent</span>' : ''}</div>${esc(trunc(wm.description,220))}</div>` : '';
+  const prev = S.prev; const next = {};
+  $('#commits').innerHTML = (s.commitments||[]).map(c => {
+    next[c.id] = c.strength;
+    const was = prev[c.id]; const moved = was!=null && Math.abs(was-c.strength) > 1e-9;
+    const nU = (c.updates||[]).length;
+    return `<div class="commit ${moved?'flash':''}">
+      <div class="row"><span class="stmt">${esc(c.statement)}</span><span class="val">${pct(c.strength)}</span></div>
+      <div class="meter"><span style="width:${(moved?was:c.strength)*100}%" data-to="${c.strength*100}"></span>${moved?`<i style="left:${was*100}%" title="before"></i>`:''}</div>
+      <div class="row"><span class="badge">${esc(c.origin||'')}</span>${moved?`<span class="delta">${pct(was)} → ${pct(c.strength)}</span>`:''}
+        <span style="flex:1"></span>${nU?`<details><summary data-traj="${c.id}">trajectory (${nU})</summary><div class="trajbox"></div></details>`:''}</div>
+    </div>`;
+  }).join('') || '<span class="note">none</span>';
+  // animate meters from the old value to the new one
+  requestAnimationFrame(()=> $$('#commits .meter > span').forEach(m => m.style.width = m.dataset.to+'%'));
+  S.prev = next;
+  $$('#commits [data-traj]').forEach(el => el.onclick = () => toggleTraj(el, el.dataset.traj));
+  const open = (s.doubts||[]).filter(d=>d.status==='open');
+  $('#doubts').innerHTML = open.map(d => `<div class="doubt">${esc(d.description)}</div>`).join('') || '<span class="note">none open</span>';
+}
+
+function trajSVG(points){
+  const W=320,H=96,pad=22;
+  const xs=i=> pad + i*(W-2*pad)/Math.max(1,points.length-1);
+  const ys=p=> (H-16) - p*(H-30);
+  const line=points.map((p,i)=>`${i?'L':'M'}${xs(i).toFixed(1)},${ys(p.probability).toFixed(1)}`).join(' ');
+  const dots=points.map((p,i)=>{
+    const lbl = `${p.label||''}${p.bayes_factor!=null?` (BF=${(+p.bayes_factor).toPrecision(3)})`:''}`;
+    return `<circle cx="${xs(i).toFixed(1)}" cy="${ys(p.probability).toFixed(1)}" r="4" fill="var(--series-1)"><title>${esc(lbl)}: P=${p.probability.toFixed(3)}</title></circle>
+      <text x="${xs(i).toFixed(1)}" y="${(ys(p.probability)-8).toFixed(1)}" text-anchor="middle">${p.probability.toFixed(2)}</text>`;
+  }).join('');
+  return `<svg width="${W}" height="${H}" role="img" aria-label="belief trajectory">
+    <line x1="${pad}" y1="${H-16}" x2="${W-pad}" y2="${H-16}" stroke="var(--baseline)"/>
+    <path d="${line}" fill="none" stroke="var(--series-1)" stroke-width="2"/>${dots}</svg>`;
+}
+async function toggleTraj(el, id){
+  const box = el.parentElement.querySelector('.trajbox');
+  if(box.dataset.open){ box.innerHTML=''; delete box.dataset.open; return; }
+  const r = await api(pa('trajectory/'+encodeURIComponent(id))); box.innerHTML = trajSVG(r.body); box.dataset.open='1';
+}
+
+// ---------- log ----------
+function renderLog(){
+  let cyc = 1, h = `<h2>Inquiry log (provenance)</h2><div class="cyc">Cycle 1</div>`;
+  S.log.forEach(e => {
+    h += `<div class="ev"><span class="v">v${e.ledger_version}</span><span><span class="mode ${esc(e.mode)}">${esc(e.mode)}</span></span>
+      <span><strong>${esc(e.operation)}</strong> — ${esc(e.summary)}${e.payload.approved===false?' <span class="badge">declined</span>':''}</span></div>`;
+    if(e.operation==='orchestrator.rehabituate') h += `<div class="cyc">Cycle ${++cyc}</div>`;
+  });
+  if(!S.log.length) h += '<span class="note">no events yet</span>';
+  $('#tab-log').innerHTML = h;
+}
+
+// ---------- forms ----------
+// Domain-aware widgets for well-known field names; generic JSON-Schema widgets otherwise.
+function commitmentOpts(){ return (S.state.commitments||[]).map(c=>({v:c.id, t:`${pct(c.strength)} · ${trunc(c.statement,90)}`})); }
+function doubtOpts(){ return (S.state.doubts||[]).filter(d=>d.status==='open').map(d=>({v:d.id, t:trunc(d.description,110)})); }
+function frameOpts(){
+  return currentCycleEvents().filter(e=>e.operation==='design.frame' && e.payload.frame)
+    .map(e=>({v:e.payload.frame.id, t:trunc(e.payload.frame.statement,110)}));
+}
+const SPECIAL = {
+  commitment_id: () => ({w:'select', opts:commitmentOpts()}),
+  doubt_id: () => ({w:'select', opts:doubtOpts(), blank:'(none)'}),
+  frame_id: () => ({w:'select', opts:frameOpts(), blank:'(none)'}),
+  challenged_commitment_ids: () => ({w:'checks', opts:commitmentOpts()}),
+  related_commitments: () => ({w:'checks', opts:commitmentOpts()}),
+  resolve_doubt_ids: () => ({w:'checks', opts:doubtOpts()}),
+  prompting_doubt_ids: () => ({w:'checks', opts:doubtOpts(), allOn:true,
+    hint:'The doubts that prompted this search (defaults to all open doubts).'}),
+  decision: () => ({w:'datalist', opts:['converge','refine_hypotheses','new_prototype']}),
+  seeds: () => ({w:'seeds'}),
+};
+
+function buildForm(box, tool, draft){
+  const props = (tool.parameters||{}).properties||{}; const req = (tool.parameters||{}).required||[];
+  box.innerHTML = Object.entries(props).map(([k,sch]) => fieldHTML(tool.name, k, sch, req.includes(k))).join('')
+    || '<div class="note">No inputs — just run it.</div>';
+  Object.entries(props).forEach(([k,sch]) => wireField(box, tool.name, k, sch, draft));
+  if(draft) fillForm(box, tool, draft);
+}
+
+// Put saved values back into a freshly built form (inverse of collect()).
+function fillForm(box, tool, args){
+  const props = (tool.parameters||{}).properties||{};
+  for(const [k, v] of Object.entries(args||{})){
+    const sch = props[k]; const el = sch && $('#'+CSS.escape(`f-${tool.name}-${k}`), box);
+    if(!el || v==null || el.classList.contains('uploads')) continue;  // uploads restore themselves
+    if(el.classList.contains('checks')){
+      let want = new Set(v.map(String));
+      if(tool.name==='disruption_triage' && k==='selected'){
+        const c = (lastPayload('disruption.surface')||{}).candidates||[], ds = new Set(v.map(x=>x.description));
+        want = new Set(c.map((x,i) => ds.has(x.description) ? String(i) : null).filter(x=>x!==null));
+      }
+      $$('input[type=checkbox]', el).forEach(c => c.checked = want.has(c.value));
+    } else if(el.classList.contains('rows')){
+      el.innerHTML = '';
+      v.forEach(o => { el.insertAdjacentHTML('beforeend', rowHTML(sch.items)); const r = el.lastElementChild;
+        $('.rm', r).onclick = () => { r.remove(); box.dispatchEvent(new Event('change')); };
+        $$('[data-k]', r).forEach(f => { if(o[f.dataset.k]!=null) f.value = o[f.dataset.k]; }); });
+    } else if(el.classList.contains('grid2')){
+      $$('textarea', el).forEach(t => t.value = (v[t.dataset.dim]||[]).join('\n'));
+    } else if(el.tagName!=='DIV'){
+      el.value = Array.isArray(v) ? v.join('\n') : typeof v==='object' ? JSON.stringify(v, null, 2) : String(v);
+    }
+  }
+}
+
+// With no draft, show what was last recorded for steps whose log payload holds
+// the submitted values, so reopening a completed step never shows a blank form.
+function recordedArgs(toolName){
+  if(toolName==='disruption_surface'){
+    // Carry the anomaly noted at Intake forward as the seed, until the first surface run.
+    const b = (lastPayload('intake.received')||{}).brief;
+    if(b && b.initiating_anomaly && !lastPayload('disruption.surface')) return {seed_anomaly: b.initiating_anomaly};
+    return undefined;
+  }
+  if(toolName==='record_brief'){
+    const b = (lastPayload('intake.received')||{}).brief; if(!b) return undefined;
+    // Briefs recorded before reference_files existed listed uploaded files under references.
+    const isFile = r => /\.[A-Za-z0-9]{2,5}$/.test(r) && !/\s\(\d{4}\)/.test(r);
+    const refs = b.references||[];
+    return {domain:b.domain, belief_summary:b.belief_summary, initiating_anomaly:b.initiating_anomaly,
+      researcher:b.researcher||undefined,
+      references: refs.filter(r => !(b.reference_files ? false : isFile(r))),
+      reference_files: b.reference_files || refs.filter(isFile)};
+  }
+  return undefined;
+}
+
+// Save what the researcher types: kept in memory at once (so a re-render never
+// loses it) and on the server shortly after (so it survives reloads and restarts).
+const draftTimers = {};
+function watchDraft(box, tool){
+  const save = () => {
+    let args; try { args = collect(box, tool); } catch(e){ return; }  // e.g. half-typed JSON
+    const empty = !Object.keys(args).length;
+    if(empty) delete S.drafts[tool.name]; else S.drafts[tool.name] = args;
+    if(!canEdit()) return;
+    clearTimeout(draftTimers[tool.name]);
+    draftTimers[tool.name] = setTimeout(() => api(pa('drafts/'+encodeURIComponent(tool.name)), {method:'PUT',
+      headers:{'content-type':'application/json'}, body:JSON.stringify({args: empty ? null : args})}), 500);
+  };
+  box.addEventListener('input', save); box.addEventListener('change', save);
+}
+
+function fieldHTML(tname, k, sch, required){
+  const sp = (tname==='record_brief' && k==='reference_files') ? {w:'uploads',
+      hint:'Source documents (articles, reports, notes). They are stored with this project; tick the ones the brief draws on.'}
+    : (tname==='disruption_triage' && k==='selected') ? {w:'candidates'}
+    : (tname==='development_build_prototype' && k==='hypotheses') ? {w:'lines', prefillHyps:true}
+    : SPECIAL[k] ? SPECIAL[k]() : null;
+  const hint = (sp&&sp.hint) || HINTS[k] || sch.description || '';
+  const lab = `<label>${esc(LABELS[tname+'.'+k] || k.replace(/_/g,' '))}${required?' <span class="req">*</span>':''}</label>`;
+  const id = `f-${tname}-${k}`;
+  let w;
+  if(sp && sp.w==='select'){
+    w = `<select id="${id}">${sp.blank?`<option value="">${sp.blank}</option>`:''}${sp.opts.map(o=>`<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('')}</select>`;
+    if(!sp.opts.length && !sp.blank) w += '<div class="hint">Nothing to choose from yet.</div>';
+  } else if(sp && sp.w==='checks'){
+    w = sp.opts.length ? `<div class="checks" id="${id}">${sp.opts.map(o=>`<label><input type="checkbox" value="${esc(o.v)}" ${sp.allOn?'checked':''}><span>${esc(o.t)}</span></label>`).join('')}</div>`
+      : `<div class="note" id="${id}">None available.</div>`;
+  } else if(sp && sp.w==='datalist'){
+    w = `<input type="text" id="${id}" list="${id}-dl"><datalist id="${id}-dl">${sp.opts.map(o=>`<option value="${o}">`).join('')}</datalist>`;
+  } else if(sp && sp.w==='seeds'){
+    w = `<div class="grid2" id="${id}">${['theories','methods','phenomenon','data'].map(d=>
+      `<div><div class="hint">${d} (one per line)</div><textarea data-dim="${d}"></textarea></div>`).join('')}</div>`;
+  } else if(sp && sp.w==='candidates'){
+    const pl = lastPayload('disruption.surface'); const cands = pl ? pl.candidates : [];
+    w = cands.length ? `<div class="checks" id="${id}">${cands.map((c,i)=>`<label><input type="checkbox" value="${i}">
+        <span><span class="badge">${esc(c.pathway)}</span> ${esc(c.description)}</span></label>`).join('')}</div>`
+      : `<div class="note" id="${id}">No surfaced candidates this cycle — run “Surface candidate disruptions” first.</div>`;
+  } else if(sp && sp.w==='uploads'){
+    w = `<div class="uploads" id="${id}">
+      <div class="drop">Drag files here, or<button class="btn small" type="button" data-pick>choose files…</button>
+        <input type="file" multiple hidden></div>
+      <ul></ul></div>`;
+  } else if(sp && sp.w==='lines'){
+    w = `<textarea id="${id}" placeholder="one per line"></textarea><button class="btn small" type="button" data-prefill="${id}">Fill from Design hypotheses</button>`;
+  } else if(sch.enum){
+    w = `<select id="${id}">${required?'':'<option value="">(default)</option>'}${sch.enum.map(o=>`<option>${esc(o)}</option>`).join('')}</select>`;
+  } else if(sch.type==='boolean'){
+    w = `<select id="${id}">${required?'':'<option value="">(unset)</option>'}<option value="false">No</option><option value="true">Yes</option></select>`;
+  } else if(sch.type==='number' || sch.type==='integer'){
+    w = `<input type="number" step="any" id="${id}" ${sch.minimum!=null?`min="${sch.minimum}"`:''} ${sch.maximum!=null?`max="${sch.maximum}"`:''}>`;
+  } else if(sch.type==='string'){
+    w = LONG.has(k) ? `<textarea id="${id}"></textarea>` : `<input type="text" id="${id}">`;
+  } else if(sch.type==='array' && sch.items && sch.items.type==='string'){
+    w = k==='references'
+      ? `<textarea id="${id}" style="min-height:5.5rem" placeholder="Hambrick, D. C., & Mason, P. A. (1984). Upper echelons: The organization as a reflection of its top managers. AMR, 9(2), 193–206."></textarea>`
+      : `<textarea id="${id}" placeholder="one per line"></textarea>`;
+  } else if(sch.type==='array' && sch.items && sch.items.properties){
+    w = `<div class="rows" id="${id}"></div><button class="btn small" type="button" data-add="${id}">+ add ${esc(k.replace(/s$/,''))}</button>`;
+  } else {
+    w = `<textarea class="code" id="${id}" placeholder="JSON object, e.g. {}"></textarea>`;
+  }
+  return `<div class="field" data-k="${k}">${lab}${w}${hint?`<div class="hint">${esc(hint)}</div>`:''}</div>`;
+}
+
+function rowHTML(itemSchema){
+  const props = itemSchema.properties; const req = itemSchema.required||[];
+  return `<div class="row"><button class="btn small rm" type="button" title="remove">✕</button>${
+    Object.entries(props).map(([k,s]) => {
+      const lab = `<label>${esc(k)}${req.includes(k)?' <span class="req">*</span>':''}</label>`;
+      let w;
+      if(k==='commitment_id') w = `<select data-k="${k}">${commitmentOpts().map(o=>`<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('')}</select>`;
+      else if(s.enum) w = `<select data-k="${k}">${req.includes(k)?'':'<option value="">(default)</option>'}${s.enum.map(o=>`<option>${esc(o)}</option>`).join('')}</select>`;
+      else if(s.type==='number') w = `<input type="number" step="any" data-k="${k}">`;
+      else if(LONG.has(k)) w = `<textarea data-k="${k}" style="min-height:2.4rem"></textarea>`;
+      else w = `<input type="text" data-k="${k}">`;
+      return `<div class="field">${lab}${w}</div>`;
+    }).join('')}</div>`;
+}
+
+const fmtSize = n => n < 1024 ? n+' B' : n < 1048576 ? (n/1024).toFixed(0)+' KB' : (n/1048576).toFixed(1)+' MB';
+
+function wireUploads(el, initial){
+  const list = $('ul', el), input = $('input[type=file]', el), drop = $('.drop', el);
+  // With a saved draft, tick exactly what was ticked; otherwise tick everything.
+  const ticked = new Set(initial||[]); let known = initial ? null : new Set();
+  const show = async () => {
+    const r = await api(pa('references'));
+    const refs = r.ok ? r.body : [];
+    if(known===null) known = new Set(refs.map(f=>f.name));  // first load with a draft: keep its selection
+    refs.forEach(f => { if(!known.has(f.name)){ known.add(f.name); ticked.add(f.name); } });
+    list.innerHTML = refs.map(f => `<li>
+      <input type="checkbox" value="${esc(f.name)}" ${ticked.has(f.name)?'checked':''} title="Include in the brief">
+      <span class="nm"><a href="${pa('references/'+encodeURIComponent(f.name))}" target="_blank" rel="noopener">${esc(f.name)}</a></span>
+      <span class="note">${fmtSize(f.size)}</span>
+      ${f.cited ? '<span class="pill" title="Cited by the recorded brief; kept as provenance">cited</span>'
+                : `<button class="btn small" type="button" data-rm="${esc(f.name)}" title="Remove this file">✕</button>`}</li>`).join('')
+      || '<li class="note">No files yet.</li>';
+    $$('input[type=checkbox]', list).forEach(c => c.onchange = () => c.checked ? ticked.add(c.value) : ticked.delete(c.value));
+    $$('[data-rm]', list).forEach(b => b.onclick = async () => {
+      const r = await api(pa('references/'+encodeURIComponent(b.dataset.rm)), {method:'DELETE'});
+      if(!r.ok) toast(r.body.detail||('Error '+r.status), 'bad');
+      ticked.delete(b.dataset.rm); known.delete(b.dataset.rm); await show(); el.dispatchEvent(new Event('change', {bubbles:true}));
+    });
+  };
+  const upload = async files => {
+    for(const f of files){
+      list.insertAdjacentHTML('afterbegin', `<li class="note">uploading ${esc(f.name)}…</li>`);
+      const r = await api(pa('references?filename='+encodeURIComponent(f.name)), {method:'POST', body:f});
+      if(!r.ok) toast(`${f.name}: ${r.body.detail||('upload failed ('+r.status+')')}`, 'bad');
+      else if(r.body.name!==f.name) toast(`A different “${f.name}” was already here — saved as “${r.body.name}”`, 'warn');
+    }
+    await show(); el.dispatchEvent(new Event('change', {bubbles:true}));
+  };
+  $('[data-pick]', el).onclick = () => input.click();
+  input.onchange = () => { upload([...input.files]); input.value = ''; };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); upload([...e.dataTransfer.files]); };
+  show();
+}
+
+function wireField(box, tname, k, sch, draft){
+  const id = `f-${tname}-${k}`;
+  const up = $('#'+CSS.escape(id)+'.uploads', box); if(up) wireUploads(up, draft ? (draft[k]||[]) : null);
+  const add = $(`[data-add="${id}"]`, box);
+  if(add){
+    const rows = $('#'+CSS.escape(id), box);
+    const addRow = () => { rows.insertAdjacentHTML('beforeend', rowHTML(sch.items));
+      const r = rows.lastElementChild; $('.rm', r).onclick = () => { r.remove(); box.dispatchEvent(new Event('change')); }; };
+    add.onclick = addRow; addRow();
+  }
+  const pf = $(`[data-prefill="${id}"]`, box);
+  if(pf) pf.onclick = () => {
+    const pl = lastPayload('design.generate_hypotheses');
+    $('#'+CSS.escape(id), box).value = pl ? pl.hypotheses.map(h=>h.statement).join('\n') : '';
+    if(!pl) toast('No working hypotheses recorded this cycle yet.', 'warn');
+  };
+  if(k==='frame_id'){ const sel = $('#'+CSS.escape(id), box); if(sel && sel.options.length>1) sel.selectedIndex = sel.options.length-1; }
+}
+
+function collect(box, tool){
+  const props = (tool.parameters||{}).properties||{}; const out = {};
+  for(const [k,sch] of Object.entries(props)){
+    const el = $('#'+CSS.escape(`f-${tool.name}-${k}`), box); if(!el) continue;
+    let v;
+    if(el.classList.contains('uploads')){
+      v = $$('ul input[type=checkbox]:checked', el).map(c => c.value);
+      if(!v.length) v = undefined;
+    } else if(el.classList.contains('checks')){
+      const on = $$('input:checked', el).map(i=>i.value);
+      if(tool.name==='disruption_triage' && k==='selected'){
+        const c = lastPayload('disruption.surface').candidates;
+        v = on.map(i=>({description:c[+i].description, pathway:c[+i].pathway, source:c[+i].source||''}));
+      } else v = on;
+      if(!v.length && k!=='selected') v = undefined;
+    } else if(el.classList.contains('rows')){
+      // A row counts only once something is typed in it (a dropdown always has a value).
+      v = $$('.row', el).filter(r => $$('input,textarea', r).some(f => f.value.trim()!=='')).map(r => { const o = {};
+        $$('[data-k]', r).forEach(f => { const val = f.value.trim(); if(val==='') return;
+          o[f.dataset.k] = f.type==='number' ? +val : val; });
+        return o; }).filter(o=>Object.keys(o).length);
+      if(!v.length) v = undefined;
+    } else if(el.classList.contains('grid2')){
+      v = {}; $$('textarea', el).forEach(t => { const ls = t.value.split('\n').map(s=>s.trim()).filter(Boolean); if(ls.length) v[t.dataset.dim]=ls; });
+      if(!Object.keys(v).length) v = undefined;
+    } else if(el.tagName==='DIV'){ v = undefined; }
+    else {
+      const raw = el.value.trim(); if(raw==='') continue;
+      if(sch.type==='boolean') v = raw==='true';
+      else if(sch.type==='number' || sch.type==='integer') v = +raw;
+      else if(sch.type==='array') v = raw.split('\n').map(s=>s.trim()).filter(Boolean);
+      else if(sch.type==='object' || (!sch.type && el.classList.contains('code'))){
+        try { v = JSON.parse(raw); } catch(e){ throw new Error(`“${k}” is not valid JSON: ${e.message}`); }
+      } else v = raw;
+    }
+    if(v!==undefined) out[k] = v;
+  }
+  return out;
+}
+
+// ---------- running a step (with the inline prompt loop) ----------
+function promptUser(need, toolName){
+  return new Promise(resolve => {
+    const dlg = $('#prompt'); const confirm = need.kind==='confirm';
+    $('#p-mode').className = 'mode '+(confirm?'checkpoint':'interactive');
+    $('#p-mode').textContent = confirm?'checkpoint':'interactive';
+    $('#p-title').textContent = confirm ? 'Approval needed' : 'Your input is needed';
+    $('#p-sub').textContent = `${toolName} paused — the core is asking:`;
+    $('#p-q').textContent = need.prompt;
+    const ctxTxt = JSON.stringify(need.context||{}, null, 2);
+    $('#p-ctx').hidden = ctxTxt==='{}'; $('pre', $('#p-ctx')).textContent = ctxTxt;
+    $('#p-input').innerHTML = confirm ? '' : `<textarea id="p-ans" style="min-height:5rem" placeholder="Leave blank to accept as proposed"></textarea>`;
+    const ctxPre = need.context && need.context.proposed_statement;
+    if(!confirm && ctxPre) $('#p-ans').value = ctxPre;
+    $('#p-ft').innerHTML = confirm
+      ? `<button class="btn" data-a="cancel">Cancel</button><button class="btn danger" data-a="no">Decline</button><button class="btn primary" data-a="yes">Approve</button>`
+      : `<button class="btn" data-a="cancel">Cancel</button><button class="btn primary" data-a="send">Submit</button>`;
+    const done = v => { dlg.close(); resolve(v); };
+    $$('#p-ft button').forEach(b => b.onclick = () => {
+      const a = b.dataset.a;
+      if(a==='cancel') done(null);
+      else if(a==='yes') done({confirm:true});
+      else if(a==='no') done({confirm:false});
+      else done({answer:$('#p-ans').value});
+    });
+    dlg.oncancel = e => { e.preventDefault(); done(null); };
+    dlg.showModal();
+  });
+}
+
+async function runTool(name, argsOrErr, card){
+  if(!canEdit()){ toast(S.me && !S.me.can_edit ? 'Log in to run steps' : 'This project is read-only — make an editable copy to run steps', 'warn'); return null; }
+  const msg = card && $(`[data-msg="${name}"]`, card); const res = card && $(`[data-res="${name}"]`, card);
+  let args;
+  try { args = typeof argsOrErr==='function' ? argsOrErr() : argsOrErr; }
+  catch(e){ if(res) res.innerHTML = `<div class="err">${esc(e.message)}</div>`; return null; }
+  const answers = [], confirmations = [];
+  S.busy = true; if(msg) msg.textContent = 'running…';
+  try {
+    for(;;){
+      const r = await api(pa('tools/'+name), {method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({args, answers, confirmations})});
+      if(r.status===409 && r.body.input_required){
+        if(msg) msg.textContent = 'waiting for you…';
+        const a = await promptUser(r.body.input_required, name);
+        if(a===null){ if(msg) msg.textContent = 'cancelled — nothing was recorded'; return null; }
+        if('confirm' in a) confirmations.push(a.confirm); else answers.push(a.answer);
+        continue;
+      }
+      if(!r.ok){
+        const d = typeof r.body.detail==='string' ? r.body.detail : JSON.stringify(r.body.detail||r.body);
+        if(res) res.innerHTML = `<div class="err">Error ${r.status}: ${esc(d)}</div>`;
+        if(msg) msg.textContent = ''; toast(`${name} failed — nothing was recorded`, 'bad'); return null;
+      }
+      const declined = confirmations.includes(false);
+      (r.body.notifications||[]).filter(n=>/caution|warning|inconsistent/i.test(n)).forEach(n => toast(n, 'warn'));
+      toast(declined ? `${name}: declined at the checkpoint (recorded)` : `${name}: done`, declined?'warn':'ok');
+      if(msg) msg.textContent = '';
+      if(card) S.open[name] = true;  // keep the card open to show what was recorded
+      await refresh();
+      const out = card && $(`[data-res="${name}"]`);
+      if(out) out.innerHTML = `<details open><summary>result</summary><pre>${esc(JSON.stringify(r.body.result, null, 2))}</pre></details>`;
+      return r.body;
+    }
+  } finally { S.busy = false; }
+}
+
+// ---------- tabs, console, polling ----------
+function switchTab(t){
+  $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab===t));
+  ['guided','log','console'].forEach(k => $('#tab-'+k).hidden = k!==t);
+}
+$$('.tabs button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+function renderConsole(){
+  const names = Object.keys(S.tools);
+  $('#tab-console').innerHTML = `<h2>Tool console</h2>
+    <p class="desc">Every tool in the registry — the same ones the agent calls — with raw JSON arguments.
+      CHECKPOINT/INTERACTIVE prompts still appear inline.</p>
+    <div class="field"><label>Tool</label><select id="c-tool">${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select>
+      <div class="hint" id="c-desc"></div></div>
+    <div class="field"><label>Arguments (JSON)</label><textarea class="code" id="c-args" style="min-height:8rem">{}</textarea></div>
+    <div class="actions"><button class="btn primary" id="c-run">Call tool</button></div>
+    <div class="result"><pre id="c-out">—</pre></div>`;
+  const show = () => {
+    const t = S.tools[$('#c-tool').value]; $('#c-desc').textContent = t.description;
+    const props = t.parameters.properties||{}; const stub = {};
+    (t.parameters.required||[]).forEach(k => stub[k] = props[k].type==='array'?[]:props[k].type==='object'?{}:'');
+    $('#c-args').value = JSON.stringify(stub, null, 2);
+  };
+  $('#c-tool').onchange = show; show();
+  $('#c-run').onclick = async () => {
+    const r = await runTool($('#c-tool').value, () => JSON.parse($('#c-args').value||'{}'), null);
+    $('#c-out').textContent = r ? JSON.stringify(r.result, null, 2) : '(no result — see notifications)';
+  };
+}
+
+// ---------- projects (landing page + routing) ----------
+const STAGE_LABEL = {intake:'Intake', baseline:'Baseline', disruption:'Disruption', doubt:'Doubt', design:'Design',
+  development:'Development', execution:'Execution', enrichment:'Enrichment', advance:'Advance'};
+const when = iso => iso ? new Date(iso).toLocaleString([], {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+const JSONH = {'content-type':'application/json'};
+
+function showView(v){
+  S.view = v;
+  ['home','workspace','login','admin'].forEach(k => $('#'+k).hidden = v!==k);
+  $('#to-home').hidden = v==='home';
+  ['#proj-name','#cycle-pill'].forEach(id => $(id).hidden = v!=='workspace');
+  document.title = {home:'IDBD Toolkit — Projects', login:'IDBD Toolkit — Log in', admin:'IDBD Toolkit — Administration'}[v]
+    || `IDBD — ${$('#proj-name').textContent||'workspace'}`;
+}
+async function loadSessions(){
+  const r = await api('api/sessions'); S.sessions = r.body; S.homeTok = JSON.stringify(r.body); return r.body;
+}
+async function route(){
+  if(location.hash==='#/login') return showLogin();
+  if(location.hash==='#/admin') return showAdmin();
+  const m = location.hash.match(/^#\/p\/(.+)$/);
+  if(m) return openProject(decodeURIComponent(m[1]));
+  return goHome();
+}
+window.addEventListener('hashchange', route);
+
+async function goHome(){
+  if(location.hash) history.replaceState(null, '', location.pathname + location.search);
+  await loadSessions();
+  showView('home'); renderHome();
+}
+async function openProject(slug){
+  const r = await api(`api/sessions/${encodeURIComponent(slug)}/open`, {method:'POST', headers:JSONH, body:'{}'});
+  if(!r.ok){ toast(`Could not open "${slug}": ${r.body.detail||r.status}`, 'bad'); return goHome(); }
+  if(location.hash !== '#/p/'+encodeURIComponent(slug)) history.replaceState(null, '', '#/p/'+encodeURIComponent(slug));
+  if(S.slug !== slug){ S.prev = {}; S.open = {}; S.selected = null; S.agentNotes = {}; }
+  S.slug = slug; S.project = r.body.session;
+  showView('workspace'); await refresh({keepSel:false}); showView('workspace');
+}
+$('#to-home').onclick = () => { location.hash = ''; goHome(); };
+$('#ro-login').onclick = () => { location.hash = '#/login'; };
+$('#agent-btn').onclick = () => openAgentSettings();
+$('#ro-copy').onclick = async () => {
+  const r = await api('api/sessions', {method:'POST', headers:JSONH, body:JSON.stringify({source:'duplicate', from_slug:S.slug})});
+  if(!r.ok) return toast(r.body.detail||('Error '+r.status), 'bad');
+  toast(`Created editable copy “${r.body.session.name}”`, 'ok');
+  location.hash = '#/p/'+encodeURIComponent(r.body.session.slug);
+};
+
+function confirmDialog(title, text, okLabel, danger){
+  return new Promise(resolve => {
+    const dlg = $('#prompt');
+    $('#p-mode').className='mode checkpoint'; $('#p-mode').textContent='confirm';
+    $('#p-title').textContent = title; $('#p-sub').textContent = '';
+    $('#p-q').textContent = text; $('#p-input').innerHTML=''; $('#p-ctx').hidden = true;
+    $('#p-ft').innerHTML = `<button class="btn" data-a="0">Cancel</button><button class="btn ${danger?'danger':'primary'}" data-a="1">${esc(okLabel)}</button>`;
+    $$('#p-ft button').forEach(b => b.onclick = () => { dlg.close(); resolve(b.dataset.a==='1'); });
+    dlg.oncancel = e => { e.preventDefault(); dlg.close(); resolve(false); };
+    dlg.showModal();
+  });
+}
+
+function originLabel(o){
+  if(!o) return '';
+  if(o==='blank') return 'started blank';
+  if(o==='built-in example') return 'built-in example';
+  if(o==='worked_example') return 'from the TMT-diversity worked example';
+  if(o.startsWith('imported from')) return 'imported from an earlier web session';
+  return o;
+}
+
+function projectCard(m, cur){
+  if(S.editing===m.slug) return `<div class="panel proj ${cur?'cur':''}" data-card="${esc(m.slug)}">
+    <div class="field"><label>Name</label><input type="text" id="ed-name" value="${esc(m.name)}"></div>
+    <div class="field"><label>Description</label><textarea id="ed-desc" placeholder="What is this inquiry about?">${esc(m.description||'')}</textarea></div>
+    <div class="acts"><button class="btn primary" data-save="${esc(m.slug)}">Save</button><button class="btn" data-cancel>Cancel</button></div></div>`;
+  const stage = m.stage ? `next: ${STAGE_LABEL[m.stage]||m.stage}` : 'cycle complete';
+  const acts = m.read_only
+    ? `<button class="btn primary" data-open="${esc(m.slug)}">Open</button>
+       ${S.me && S.me.can_edit ? `<button class="btn small" data-dup="${esc(m.slug)}">Make an editable copy</button>` : ''}`
+    : `<button class="btn primary" data-open="${esc(m.slug)}">Open</button>
+      <button class="btn small" data-edit="${esc(m.slug)}">Edit</button>
+      <button class="btn small" data-dup="${esc(m.slug)}">Duplicate</button>
+      <span class="sp"></span>
+      <button class="btn small danger" data-del="${esc(m.slug)}">Delete</button>`;
+  return `<div class="panel proj ${cur?'cur':''} ${m.read_only?'ro':''}" data-card="${esc(m.slug)}">
+    <div class="nm">${esc(m.name)} ${m.read_only?'<span class="pill" title="Served from the original files; cannot be changed">read-only</span>':''}
+      ${cur?'<span class="pill" title="The project the server has open">last open</span>':''}</div>
+    ${m.description ? `<div class="desc">${esc(m.description)}</div>` : ''}
+    <div class="note">Cycle ${m.cycle??1} · ${esc(stage)} · ${m.events??0} steps · ${m.commitments??0} beliefs</div>
+    ${m.bam ? `<div class="bamsnip" title="${esc(m.bam)}"><strong>BAM</strong> ${esc(trunc(m.bam, 150))}</div>` : ''}
+    <div class="note">${m.read_only ? 'Generated' : 'Saved'} ${esc(when(m.updated))} · ${esc(originLabel(m.origin))}</div>
+    <div class="acts">${acts}</div></div>`;
+}
+
+function renderHome(){
+  const ss = S.sessions, cur = ss.last_open;
+  if(!(S.me && S.me.can_edit)){
+    $('#home').innerHTML = `<div class="home-head"><div class="t"><h3>IDBD Toolkit</h3>
+        <div class="desc">A guided workspace for the Inquiry-Driven Big Data (IDBD) process: from a researcher's
+          baseline beliefs through Disruption, Doubt, Design, Development, Execution and Enrichment, with every
+          belief update recorded. Browse the worked example below.</div></div>
+        <button class="btn primary" id="home-login">Log in</button></div>
+      <div class="grid">${ss.sessions.map(m => projectCard(m, false)).join('')}</div>
+      <p class="note" style="margin-top:1.2rem">Accounts are issued by the site administrator. To run the toolkit yourself,
+        see the project's source repository.</p>`;
+    $('#home-login').onclick = () => { location.hash = '#/login'; };
+    $$('[data-open]', $('#home')).forEach(b => b.onclick = () => location.hash = '#/p/'+encodeURIComponent(b.dataset.open));
+    return;
+  }
+  const dupOpts = ss.sessions.map(m => `<option value="dup:${esc(m.slug)}">Copy of “${esc(m.name)}”</option>`).join('');
+  const form = S.newOpen ? `<div class="panel newproj">
+      <h2>New project</h2>
+      <div class="field"><label>Name</label><input type="text" id="np-name" placeholder="e.g. CEO succession inquiry"></div>
+      <div class="field"><label>Description <span class="note">(optional)</span></label><textarea id="np-desc" placeholder="What is this inquiry about?"></textarea></div>
+      <div class="field"><label>Start from</label><select id="np-src">
+        <option value="blank">A blank inquiry (begins at Intake)</option>
+        ${dupOpts}</select>
+        <div class="hint">A copy is an independent branch: changes to it never touch the original.</div></div>
+      <div class="actions"><button class="btn primary" id="np-go">Create &amp; open</button> <button class="btn" id="np-cancel">Cancel</button></div>
+    </div>` : '';
+  const cards = ss.sessions.length
+    ? `<div class="grid">${ss.sessions.map(m => projectCard(m, m.slug===cur)).join('')}</div>`
+    : `<div class="panel empty">No projects yet. Start one with <strong>+ New project</strong>.</div>`;
+  const trash = ss.trash.length ? `<details class="trash"><summary>Trash (${ss.trash.length})</summary>
+      <div class="note">Deleted projects are kept here until removed from the server's sessions folder.</div>
+      <table>${ss.trash.map(t => `<tr><td>${esc(t.name)}<div class="note">${esc(t.description||'')}</div></td>
+        <td class="note">deleted ${esc(when(t.deleted))}</td>
+        <td><button class="btn small" data-restore="${esc(t.trash_id)}">Restore</button></td></tr>`).join('')}</table></details>` : '';
+  $('#home').innerHTML = `<div class="home-head"><div class="t"><h3>Inquiry projects</h3>
+      <div class="desc">Each project is one IDBD inquiry — its belief ledger and inquiry log — saved after every step.</div>
+      ${ss.root ? `<div class="note">Stored in ${esc(ss.root)}</div>` : ''}</div>
+      ${S.newOpen ? '' : '<button class="btn primary" id="np-open">+ New project</button>'}</div>
+    ${form}${cards}${trash}`;
+  bindHome();
+}
+
+function bindHome(){
+  const H = $('#home'), on = (sel, fn) => $$(sel, H).forEach(b => b.onclick = () => fn(b));
+  const np = $('#np-open'); if(np) np.onclick = () => { S.newOpen = true; renderHome(); $('#np-name').focus(); };
+  const cancel = $('#np-cancel'); if(cancel) cancel.onclick = () => { S.newOpen = false; renderHome(); };
+  const go = $('#np-go'); if(go) go.onclick = async () => {
+    const src = $('#np-src').value, dup = src.startsWith('dup:');
+    const r = await api('api/sessions', {method:'POST', headers:JSONH, body:JSON.stringify({
+      name:$('#np-name').value, description:$('#np-desc').value,
+      source: dup ? 'duplicate' : src, from_slug: dup ? src.slice(4) : null})});
+    if(!r.ok) return toast(r.body.detail||('Error '+r.status), 'bad');
+    S.newOpen = false; toast(`Created “${r.body.session.name}”`, 'ok');
+    location.hash = '#/p/'+encodeURIComponent(r.body.session.slug);
+  };
+  on('[data-open]', b => location.hash = '#/p/'+encodeURIComponent(b.dataset.open));
+  on('[data-edit]', b => { S.editing = b.dataset.edit; renderHome(); $('#ed-name').focus(); });
+  on('[data-cancel]', () => { S.editing = null; renderHome(); });
+  on('[data-save]', async b => {
+    const r = await api(`api/sessions/${encodeURIComponent(b.dataset.save)}`, {method:'PATCH', headers:JSONH,
+      body:JSON.stringify({name:$('#ed-name').value, description:$('#ed-desc').value})});
+    if(!r.ok) return toast(r.body.detail||('Error '+r.status), 'bad');
+    S.editing = null; S.sessions = r.body; S.homeTok = JSON.stringify(r.body); renderHome(); toast('Saved', 'ok');
+  });
+  on('[data-dup]', async b => {
+    const r = await api('api/sessions', {method:'POST', headers:JSONH,
+      body:JSON.stringify({source:'duplicate', from_slug:b.dataset.dup})});
+    if(!r.ok) return toast(r.body.detail||('Error '+r.status), 'bad');
+    toast(`Duplicated as “${r.body.session.name}”`, 'ok'); await loadSessions(); renderHome();
+  });
+  on('[data-del]', async b => {
+    const m = S.sessions.sessions.find(x => x.slug===b.dataset.del);
+    const ok = await confirmDialog('Move project to trash?',
+      `“${m.name}” will be moved to the trash. Nothing is erased — you can restore it from the Trash section on this page.`,
+      'Move to trash', true);
+    if(!ok) return;
+    const r = await api(`api/sessions/${encodeURIComponent(m.slug)}`, {method:'DELETE'});
+    if(!r.ok) return toast(r.body.detail||('Error '+r.status), 'bad');
+    S.sessions = r.body; S.homeTok = JSON.stringify(r.body); renderHome(); toast(`Moved “${m.name}” to trash`, 'ok');
+  });
+  on('[data-restore]', async b => {
+    const r = await api(`api/sessions/trash/${encodeURIComponent(b.dataset.restore)}/restore`, {method:'POST'});
+    if(!r.ok) return toast(r.body.detail||('Error '+r.status), 'bad');
+    S.sessions = r.body; S.homeTok = JSON.stringify(r.body); renderHome(); toast('Restored', 'ok');
+  });
+}
+
+async function poll(){
+  if(S.view==='login' || S.view==='admin'){ /* nothing live */ }
+  else if(S.view==='home'){
+    const r = await api('api/sessions').catch(()=>null);
+    $('#live').style.color = r && r.ok ? 'var(--good)' : 'var(--critical)';
+    // don't yank a form out from under someone typing
+    if(r && r.ok && JSON.stringify(r.body)!==S.homeTok && !S.editing && !S.newOpen){
+      S.sessions = r.body; S.homeTok = JSON.stringify(r.body); renderHome();
+    }
+  } else if(!S.busy){
+    const v = await api(pa('version')).catch(()=>null);
+    if(v && v.ok){
+      $('#live').style.color = 'var(--good)';
+      const tok = JSON.stringify(v.body);
+      if(tok!==S.token){ await refresh(); toast('State changed elsewhere — refreshed'); }
+    } else $('#live').style.color = 'var(--critical)';
+  }
+  setTimeout(poll, 4000);
+}
+
+// ---------- identity: login, account, administration ----------
+async function loadMe(){ const r = await api('api/me'); S.me = r.body; renderUser(); renderAgentButton(); }
+function renderUser(){
+  const me = S.me || {}, u = me.user, area = $('#user-area');
+  if(me.mode !== 'server'){ area.innerHTML = ''; return; }
+  area.innerHTML = u
+    ? `<span class="note" title="${esc(u.role)}">${esc(u.display_name || u.username)}</span>
+       ${u.role==='admin' ? '<button class="btn small" id="u-admin">Administration</button>' : ''}
+       <button class="btn small" id="u-account">Account</button><button class="btn small" id="u-logout">Log out</button>`
+    : '<button class="btn small" id="u-login">Log in</button>';
+  const on = (id, fn) => { const b = $('#'+id); if(b) b.onclick = fn; };
+  on('u-login', () => location.hash = '#/login');
+  on('u-admin', () => location.hash = '#/admin');
+  on('u-account', accountDialog);
+  on('u-logout', async () => { await api('api/logout', {method:'POST'}); await loadMe(); location.hash = ''; goHome(); toast('Logged out', 'ok'); });
+}
+
+function showLogin(){
+  showView('login');
+  $('#login').innerHTML = `<div class="panel login-box"><h2>Log in</h2>
+    <form id="login-form">
+      <div class="field"><label>Username</label><input type="text" id="li-user" autocomplete="username" required></div>
+      <div class="field"><label>Password</label><input type="password" id="li-pass" autocomplete="current-password" required></div>
+      <div class="actions"><button class="btn primary" type="submit">Log in</button> <span class="note" id="li-msg"></span></div>
+    </form><p class="note">No account? Accounts are issued by the site administrator.</p></div>`;
+  $('#li-user').focus();
+  $('#login-form').onsubmit = async e => {
+    e.preventDefault();
+    const r = await api('api/login', {method:'POST', headers:JSONH,
+      body: JSON.stringify({username:$('#li-user').value, password:$('#li-pass').value})});
+    if(!r.ok){ $('#li-msg').textContent = r.body.detail || 'Login failed'; return; }
+    await loadMe(); location.hash = ''; goHome(); toast(`Welcome, ${r.body.user.display_name || r.body.user.username}`, 'ok');
+  };
+}
+
+function accountDialog(){
+  const dlg = $('#prompt'), u = S.me.user;
+  $('#p-mode').className = 'mode auto'; $('#p-mode').textContent = 'account';
+  $('#p-title').textContent = `Account: ${u.username}`;
+  $('#p-sub').textContent = `Role: ${u.role}. Changing your password signs you out everywhere.`;
+  $('#p-q').hidden = true; $('#p-ctx').hidden = true;
+  $('#p-input').innerHTML = `<div class="field"><label>Current password</label><input type="password" id="ac-cur" autocomplete="current-password"></div>
+    <div class="field"><label>New password (at least 10 characters)</label><input type="password" id="ac-new" autocomplete="new-password"></div>`;
+  $('#p-ft').innerHTML = '<button class="btn" data-a="0">Close</button><button class="btn primary" data-a="1">Change password</button>';
+  const close = () => { dlg.close(); $('#p-q').hidden = false; };
+  $$('#p-ft button').forEach(b => b.onclick = async () => {
+    if(b.dataset.a!=='1') return close();
+    const r = await api('api/me/password', {method:'POST', headers:JSONH,
+      body: JSON.stringify({current:$('#ac-cur').value, new:$('#ac-new').value})});
+    if(!r.ok) return toast(r.body.detail || 'Could not change password', 'bad');
+    close(); await loadMe(); toast('Password changed — please log in again', 'ok'); location.hash = '#/login';
+  });
+  dlg.oncancel = e => { e.preventDefault(); close(); };
+  dlg.showModal();
+}
+
+async function showAdmin(){
+  if(!(S.me && S.me.user && S.me.user.role==='admin')){ toast('Administrators only', 'warn'); location.hash=''; return goHome(); }
+  showView('admin');
+  const r = await api('api/admin/users');
+  if(!r.ok){ $('#admin').innerHTML = `<div class="panel">${esc(r.body.detail||'error')}</div>`; return; }
+  const me = S.me.user.username;
+  $('#admin').innerHTML = `<div class="home-head"><div class="t"><h3>Administration</h3>
+      <div class="desc">Accounts on this site. Researchers each get a private workspace; administrators can also manage accounts.
+        Disabling an account or resetting its password signs that person out everywhere. Visitors without an account see only the demo.</div></div></div>
+    <div class="panel"><table class="users"><thead><tr><th>User</th><th>Role</th><th>Active</th><th>Projects</th><th>Storage</th><th></th></tr></thead><tbody>
+    ${r.body.map(u => `<tr class="${u.active?'':'off'}" data-u="${esc(u.username)}">
+      <td><strong>${esc(u.username)}</strong>${u.username===me?' <span class="note">(you)</span>':''}<div class="note">${esc(u.display_name||'')}</div></td>
+      <td><select data-role>${['researcher','admin'].map(x => `<option ${x===u.role?'selected':''}>${x}</option>`).join('')}</select></td>
+      <td><input type="checkbox" data-active ${u.active?'checked':''}></td>
+      <td>${u.projects}</td><td class="note">${u.storage_mb} MB</td>
+      <td><button class="btn small" data-reset>Reset password</button></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="panel" style="margin-top:1rem"><h2>Add an account</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+        <div class="field"><label>Username</label><input type="text" id="nu-name" placeholder="lowercase, e.g. jsmith"></div>
+        <div class="field"><label>Display name</label><input type="text" id="nu-display" placeholder="Jane Smith"></div>
+        <div class="field"><label>Role</label><select id="nu-role"><option>researcher</option><option>admin</option></select></div>
+        <div class="field"><label>Temporary password</label><div style="display:flex;gap:.3rem"><input type="text" id="nu-pass" style="flex:1"><button class="btn small" type="button" id="nu-gen">Generate</button></div></div>
+      </div>
+      <div class="hint">Send the temporary password to the person privately; they can change it under Account.</div>
+      <div class="actions"><button class="btn primary" id="nu-go">Add account</button></div></div>`;
+  const patch = async (u, body, msg) => {
+    const r = await api('api/admin/users/'+encodeURIComponent(u), {method:'PATCH', headers:JSONH, body:JSON.stringify(body)});
+    if(!r.ok) toast(r.body.detail || 'Update failed', 'bad'); else toast(msg, 'ok');
+    showAdmin();
+  };
+  $$('#admin tr[data-u]').forEach(tr => {
+    const u = tr.dataset.u;
+    $('[data-role]', tr).onchange = e => patch(u, {role:e.target.value}, `${u} is now ${e.target.value}`);
+    $('[data-active]', tr).onchange = e => patch(u, {active:e.target.checked}, `${u} ${e.target.checked?'enabled':'disabled'}`);
+    $('[data-reset]', tr).onclick = async () => {
+      const pw = genPassword();
+      if(!(await confirmDialog(`Reset ${u}'s password?`, `The new temporary password will be:\n\n${pw}\n\nCopy it now and send it to them privately. Their existing sessions will be signed out.`, 'Reset password'))) return;
+      patch(u, {password: pw}, `Password reset for ${u}`);
+    };
+  });
+  $('#nu-gen').onclick = () => { $('#nu-pass').value = genPassword(); };
+  $('#nu-go').onclick = async () => {
+    const r = await api('api/admin/users', {method:'POST', headers:JSONH, body:JSON.stringify({
+      username:$('#nu-name').value, display_name:$('#nu-display').value, role:$('#nu-role').value, password:$('#nu-pass').value})});
+    if(!r.ok) return toast(r.body.detail || 'Could not add the account', 'bad');
+    toast(`Added ${r.body.username}`, 'ok'); showAdmin();
+  };
+}
+function genPassword(){
+  const a = new Uint8Array(12); crypto.getRandomValues(a);
+  return Array.from(a, b => 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'[b % 55]).join('').replace(/(.{4})(?!$)/g, '$1-');
+}
+
+(async () => {
+  S.agent = loadAgent();
+  const a = await api('api/assist').catch(()=>null); S.assist = a && a.ok ? a.body : {providers:[]};
+  await loadMe();
+  await loadTools(); renderConsole();
+  await route(); poll();
+})();
+</script>
+</body>
+</html>
