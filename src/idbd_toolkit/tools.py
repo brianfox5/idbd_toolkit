@@ -10,6 +10,7 @@ app; only the bound :class:`Interactor` differs.
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -43,8 +44,9 @@ class Tool:
 
 
 class ToolRegistry:
-    def __init__(self, tools: list[Tool]) -> None:
+    def __init__(self, tools: list[Tool], ctx: InquiryContext | None = None) -> None:
         self._tools = {t.name: t for t in tools}
+        self._ctx = ctx
 
     def names(self) -> list[str]:
         return list(self._tools)
@@ -56,7 +58,15 @@ class ToolRegistry:
         return [t.schema() for t in self._tools.values()]
 
     def call(self, name: str, args: dict[str, Any] | None = None) -> Any:
-        return self._tools[name].handler(args or {})
+        """Run a tool; the events it records carry its inputs (``args``)."""
+        args = args or {}
+        if self._ctx is None:
+            return self._tools[name].handler(args)
+        self._ctx.call_args = copy.deepcopy(args)
+        try:
+            return self._tools[name].handler(args)
+        finally:
+            self._ctx.call_args = None
 
 
 def build_registry(ctx: InquiryContext) -> ToolRegistry:
@@ -97,6 +107,7 @@ def build_registry(ctx: InquiryContext) -> ToolRegistry:
             args.get("candidates", []),
             seed_anomaly=args.get("seed_anomaly"),
             seed_pathway=args.get("seed_pathway", "anomalous_observations"),
+            seed_files=args.get("seed_files"),
         )
         return [c.to_dict() for c in cands]
 
@@ -292,19 +303,29 @@ def build_registry(ctx: InquiryContext) -> ToolRegistry:
     tools = [
         Tool(
             "record_brief",
-            "INTAKE: record the researcher's raw kickoff brief (domain, current "
-            "belief summary + references) as the inquiry's origin. Optionally note "
-            "what prompted the inquiry; it is carried forward to seed Disruption "
-            "and is kept out of the baseline.",
+            "The purpose of this step is to document your initial beliefs and any research you explicitly note has been relied upon. "
+            "This information will be encoded by the application and passed on to the Baseline step.\n \n"
+            "The domain field establishes the topic of inquiry which will help guide later prompts, while "
+            "the belief summary is a concise overview of your current understanding of the literature (a paragraph or two is sufficient). \n\n"
+            "You can provide references (in any citation format), URLs, or attach full-text documents that support your positions. "
+            "The full-text documents will be uploaded and can be processed by the agent in the next step, whereas the references and URLs are for reference only rather than ingestion. \n\n"
+            "Optionally, you can note what prompted this cycle of inquiry. This information will be carried forward to seed the Disruption phase. "
+            "In other words, while the Baseline step that immediately follows establishes the baseline model, oftentimes you already have some indication that something might be amiss, "
+            "and this is the opportunity to note that something is not right with our current state of knowledge, which will be augmented and elaborated upon in the Disruption phase.\n\n"
+            "NOTE: While we do not recommend it at this stage, if you do not yet have a crisp statement of your beliefs, you can use the Draft with agent tool to provide your initial thoughts as a short prompt statement"
+            "and it will elaborate upon them to fill out the fields below - although it will not surface references or specific files.",
             {
                 "type": "object",
                 "properties": {
-                    "domain": {"type": "string"},
-                    "belief_summary": {"type": "string"},
+                    "domain": {"type": "string",
+                    "description": "Provide a description of the topic or question that is the subject of inquiry. This information will guide later prompts."},
+                    "belief_summary": {"type": "string",
+                    "description": "Provide an overview of your current understanding for the topic of inquiry, which will be used to construct a baseline model in concert with the references you provide."},
                     "initiating_anomaly": {
                         "type": "string",
-                        "description": "Optional: what prompted this inquiry. Carried "
-                                       "forward to seed the Disruption phase.",
+                        "description": "Optional. Kept as a record of what started the inquiry and carried forward to seed the initiating anomaly field in the Disruption step (step 1). "
+                        "This information is NOT included in the construction of the baseline model.",
+                                       
                     },
                     "references": {
                         "type": "array", "items": {"type": "string"},
@@ -323,10 +344,20 @@ def build_registry(ctx: InquiryContext) -> ToolRegistry:
         ),
         Tool(
             "establish_baseline",
-            "BASELINE (habituation, before any anomaly): establish the initial BAM "
-            "from a literature synthesis and the researcher's own summary, plus the "
-            "prior commitments it rests on, each with a credence (flag agent-"
-            "estimated credences via origin='agent_estimated').",
+            "Establish a baseline best available model (BAM) related to the topic of inquiry. "
+            "This can be manually input, but the step is designed to be run using the agent to draft the fields below, subject to your review, modification, and approval. "
+            "This step takes as given the input the materials encoded into the inquiry log in the previous step (namely, the domain of discourse, the summary of beliefs, and) any references provided. "
+            "Full-text documents uploaded in the previous step will be processed and included in the generation of the fields. "
+            "You can provide further guidance to this process by using the optional prompt guidance below.\n\n"
+            "The agent will return a written summary of the best available model, typically in the form of a list of constructs, relationships, and boundary conditions. "
+            "In addition, the agent will establish a set of commitments, or statements of belief regarding the best available model. These statements are accompanied by "
+            "the strength of that belief (from 0 to 1), a summary of the rationale for that level of credence, and the provenance of that belief. "
+            "The agent will explicitly identify credences it has generated  using the tag origin='agent_estimated')."
+            "The researcher can modify the text and magnitude of belief, delete, or add additional beliefs, and modify the source to 'researcher_set' as needed. \n\n"
+            "Optionally, a summary of the literature can be captured for use in later steps.  This is automatically generated by the agent but can be written in totality or modified as needed "
+            "by the researcher.  The researcher can also provide their own idiosyncratic summary of the literature that can be considered in concert with the AI generated version by entering "
+            "it in the researcher summary field. \n\n"
+            "NOTE:",
             {
                 "type": "object",
                 "properties": {
@@ -358,6 +389,13 @@ def build_registry(ctx: InquiryContext) -> ToolRegistry:
                         "type": "string", "enum": _pathways,
                         "description": "Which pathway the initiating anomaly arrives "
                                        "through (default anomalous_observations).",
+                    },
+                    "seed_files": {
+                        "type": "array", "items": {"type": "string"},
+                        "description": "File names of source documents stored with "
+                                       "the project that support the initiating "
+                                       "anomaly (e.g. uploaded PDFs). Kept out of "
+                                       "the baseline.",
                     },
                     "candidates": {"type": "array", "items": _candidate_item},
                 },
@@ -803,4 +841,4 @@ def build_registry(ctx: InquiryContext) -> ToolRegistry:
             orchestrator_summary,
         ),
     ]
-    return ToolRegistry(tools)
+    return ToolRegistry(tools, ctx)

@@ -31,3 +31,17 @@ def test_wrappers_are_thin_translation_over_core():
 
     state = reg.call("get_belief_state", {})
     assert len(state["doubts"]) == 1
+
+
+def test_tool_calls_record_their_inputs_on_the_log():
+    from idbd_toolkit import InquiryContext, InquiryLog, Mode, build_registry
+    ctx = InquiryContext()
+    reg = build_registry(ctx)
+    args = {"seed_anomaly": "a surprise", "seed_pathway": "unexpected_behavior"}
+    reg.call("disruption_surface", args)
+    ev = ctx.log.events()[-1]
+    assert ev.args == args and ev.args is not args  # a copy, not the caller's dict
+    assert ctx.call_args is None
+    ctx.record("baseline.establish", Mode.AUTO, "outside a tool call")
+    assert "args" not in ctx.log.to_list()[-1]  # such events keep the old shape
+    assert InquiryLog.from_list(ctx.log.to_list()).events()[0].args == args

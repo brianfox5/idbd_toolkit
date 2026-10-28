@@ -41,6 +41,8 @@ class InquiryContext:
         self.ledger = ledger or BeliefLedger()
         self.log = log or InquiryLog()
         self.interactor: Interactor = interactor or AutoInteractor()
+        # Inputs of the tool call in progress, stamped on the events it records.
+        self.call_args: dict[str, Any] | None = None
 
     def resolve_mode(self, operation_id: str, override: Mode | None = None) -> Mode:
         return autonomy.resolve_mode(operation_id, override)
@@ -60,6 +62,7 @@ class InquiryContext:
             summary=summary,
             ledger_version=self.ledger.version,
             payload=payload or {},
+            args=self.call_args,
         )
         return self.log.append(event)
 

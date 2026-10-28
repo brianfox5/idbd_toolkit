@@ -15,8 +15,7 @@ keywords:
   - inference to the best explanation
   - Bayesian belief updating
   - management research methods
-# TODO: add the repository URL once it exists, e.g.
-# repository-code: "https://github.com/<account>/<repository>"
+repository-code: "https://github.com/brianfox5/idbd_toolkit"
 preferred-citation:
   type: unpublished
   title: "The Reconfiguration of Pragmatist Inquiry: An Experimental Platform for Designing Human-AI Theory Building"

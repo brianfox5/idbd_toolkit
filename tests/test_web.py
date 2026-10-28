@@ -222,3 +222,31 @@ def test_form_drafts_persist_per_project(tmp_path):
     assert client2.get(f"/api/p/{b}/drafts").json() == {}
     client2.put(f"/api/p/{a}/drafts/record_brief", json={"args": None})
     assert client2.get(f"/api/p/{a}/drafts").json() == {}
+
+
+def test_anomaly_files_are_cited_and_kept_out_of_the_baseline(tmp_path, monkeypatch):
+    from idbd_toolkit.web import assist, llm
+    client, root, pristine = _app(tmp_path)
+    slug = _project(client, "Anomaly files")
+    p = f"/api/p/{slug}"
+    for name in ("Brief source.pdf", "Anomaly data.pdf", "Unused.pdf"):
+        client.post(f"{p}/references", params={"filename": name}, content=b"%PDF " + name.encode())
+    client.post(f"{p}/tools/record_brief", json={"args": {
+        **BRIEF["args"], "reference_files": ["Brief source.pdf"]}})
+    r = client.post(f"{p}/tools/disruption_surface", json={"args": {
+        "seed_anomaly": "a surprise", "seed_files": ["Anomaly data.pdf"]}})
+    assert r.status_code == 200, r.text
+    refs = {r["name"]: r["cited"] for r in client.get(f"{p}/references").json()}
+    assert refs == {"Anomaly data.pdf": True, "Brief source.pdf": True, "Unused.pdf": False}
+    assert client.delete(f"{p}/references/Anomaly data.pdf").status_code == 409
+
+    sent = {}
+    monkeypatch.setattr(llm, "resolve", lambda choice, env_file=None: None)
+    monkeypatch.setattr(assist, "draft", lambda ctx, tool, *, reference_paths, **kw:
+                        sent.setdefault(tool["name"], sorted(f.name for f in reference_paths)) and {})
+    for tool in ("establish_baseline", "doubt_assess"):
+        client.post(f"{p}/assist/{tool}", json={})
+    client.post(f"{p}/assist/disruption_triage", json={"draft": {"seed_files": ["Unused.pdf"]}})
+    assert sent["establish_baseline"] == ["Brief source.pdf"]  # blind to the anomaly
+    assert sent["doubt_assess"] == ["Anomaly data.pdf", "Brief source.pdf"]
+    assert sent["disruption_triage"] == ["Anomaly data.pdf", "Brief source.pdf", "Unused.pdf"]

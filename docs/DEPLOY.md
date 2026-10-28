@@ -45,9 +45,9 @@ The `idbd` account runs the app and owns its data; it cannot log in.
 
 ```bash
 sudo mkdir -p /opt/idbd && sudo chown idbd:idbd /opt/idbd
-sudo -u idbd git clone <repository URL> /opt/idbd
+sudo -u idbd git clone https://github.com/brianfox5/idbd_toolkit.git /opt/idbd
 cd /opt/idbd
-sudo -u idbd env UV_PYTHON_INSTALL_DIR=/opt/idbd/.python uv sync --extra web --frozen
+sudo -u idbd env UV_PYTHON_INSTALL_DIR=/opt/idbd/.python uv sync --extra web --locked
 ```
 
 This creates `/opt/idbd/.venv` with Python and every dependency inside `/opt/idbd`;
@@ -66,11 +66,13 @@ sudo nano /etc/idbd/idbd.env        # check IDBD_ROOT_PATH matches your chosen p
 
 ```bash
 sudo -u idbd env IDBD_DATA_DIR=/var/lib/idbd /opt/idbd/.venv/bin/idbd-admin \
-     create-user yourname --role admin --name "Your Name"
+     create-user brianfox --role admin --name "Brian Fox"
 ```
 
 You'll be asked for a password (at least 10 characters). Further accounts can be
 added in the browser under **Administration**.
+
+
 
 ## 5. Run it as a service
 
@@ -142,16 +144,36 @@ Command-line account management (on the server):
 ```bash
 sudo -u idbd env IDBD_DATA_DIR=/var/lib/idbd /opt/idbd/.venv/bin/idbd-admin list
 #   … create-user NAME [--role admin] | set-password NAME | disable NAME | enable NAME
+
+sudo -u idbd env IDBD_DATA_DIR=/var/lib/idbd /opt/idbd/.venv/bin/idbd-admin \
+create-user guest --role admin 
+
 ```
 
 ## Updating
 
 ```bash
+sudo /opt/idbd/deploy/update.sh --check   # optional: see what's coming, change nothing
 sudo /opt/idbd/deploy/update.sh
 ```
 
-Pulls the latest code, reinstalls dependencies and restarts the service. Data in
-`/var/lib/idbd` is untouched.
+The script lists the incoming changes, pulls them, reinstalls dependencies exactly as
+pinned in `uv.lock`, restarts the service and confirms the app is answering. Data in
+`/var/lib/idbd`, the settings in `/etc/idbd/idbd.env`, the installed service file and
+your Apache configuration are never modified. It stops or warns when an update needs
+you:
+
+- **Files edited in `/opt/idbd` on the server** — it stops before changing anything
+  (server settings belong in `/etc/idbd/idbd.env`).
+- **Dependencies changed but `uv.lock` wasn't updated** — it puts the previous version
+  back, leaving the site as it was; run `uv lock` on your development machine,
+  commit `uv.lock`, push, and update again.
+- **The Apache block, settings template or service file changed** — it shows exactly
+  what changed and the command to apply it.
+- **The app doesn't come back after the restart** — it shows the recent log and the
+  commands to return to the previous version.
+
+Afterwards, ask anyone with the site open to reload the page.
 
 ## Backups
 

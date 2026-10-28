@@ -432,10 +432,13 @@ def create_app(
             return h.ctx.log.to_list()
 
     @app.get("/api/p/{slug}/progress")
-    def progress(slug: str, request: Request) -> dict[str, Any]:
+    def progress(slug: str, request: Request, cycle: int | None = None) -> dict[str, Any]:
         h = _project(request, slug)
         with h.lock:
-            return cycle_progress(h.ctx.ledger, h.ctx.log)
+            try:
+                return cycle_progress(h.ctx.ledger, h.ctx.log, cycle)
+            except ValueError as e:
+                raise HTTPException(404, str(e))
 
     @app.get("/api/p/{slug}/version")
     def version(slug: str, request: Request) -> dict[str, Any]:
@@ -488,14 +491,17 @@ def create_app(
 
     # -- one project: reference files ------------------------------------------------
     def _cited(h: ProjectHandle) -> set[str]:
-        """Files named by a brief already recorded in this project's log
-        (``references`` too, for briefs recorded before ``reference_files``)."""
+        """Files named by a brief or a surfaced anomaly already recorded in this
+        project's log (``references`` too, for briefs recorded before
+        ``reference_files``)."""
         names = set()
         for e in h.ctx.log.events():
             if e.operation == "intake.received":
                 brief = e.payload.get("brief") or {}
                 names.update(brief.get("reference_files") or [])
                 names.update(brief.get("references") or [])
+            elif e.operation == "disruption.surface":
+                names.update(e.payload.get("seed_files") or [])
         return names
 
     @app.get("/api/p/{slug}/references")
@@ -558,13 +564,23 @@ def create_app(
         return {"saved": tool}
 
     # -- agent assist: an LLM drafts a step's inputs for review ----------------------
-    def _brief_files(h: ProjectHandle) -> list[Path]:
-        """Files the latest recorded brief cites; all project files if none yet."""
-        briefs = [e.payload.get("brief") or {} for e in h.ctx.log.events()
+    def _brief_files(h: ProjectHandle, *, blind: bool = False,
+                     selected: list[str] = ()) -> list[Path]:
+        """Files the latest recorded brief cites (all project files if none yet),
+        those supporting a surfaced anomaly, and any ticked in the form being
+        drafted. ``blind`` steps (the baseline) never see the anomaly's files."""
+        events = h.ctx.log.events()
+        briefs = [e.payload.get("brief") or {} for e in events
                   if e.operation == "intake.received"]
         names = ([*(briefs[-1].get("reference_files") or []),
                   *(briefs[-1].get("references") or [])] if briefs
                  else [r["name"] for r in h.store.references(h.slug)])
+        anomaly = [n for e in events if e.operation == "disruption.surface"
+                   for n in e.payload.get("seed_files") or []]
+        if blind:
+            names = [n for n in names if briefs or n not in anomaly]
+        else:
+            names = [*names, *anomaly, *selected]
         paths = []
         for n in dict.fromkeys(names):
             try:
@@ -607,7 +623,9 @@ def create_app(
         with h.lock:
             snapshot = InquiryContext(ledger=BeliefLedger.from_dict(h.ctx.ledger.to_dict()),
                                       log=InquiryLog.from_list(h.ctx.log.to_list()))
-            files = _brief_files(h)
+            ticked = [n for k in ("reference_files", "seed_files")
+                      for n in (body.draft or {}).get(k) or [] if isinstance(n, str)]
+            files = _brief_files(h, blind=tool in assist.BLIND_TO_ANOMALY, selected=ticked)
             tool_schema = h.registry.get(tool).schema()
         try:
             return assist.draft(snapshot, tool_schema, reference_paths=files,

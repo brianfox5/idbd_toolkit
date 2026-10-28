@@ -66,3 +66,23 @@ def test_deferred_interactor_raises_with_the_core_prompt():
         assert need.to_dict() == {"kind": "confirm", "prompt": "second?", "context": {"x": 1}}
     else:
         raise AssertionError("expected InputRequired")
+
+
+def test_a_completed_cycle_can_be_reviewed():
+    import pytest
+    from idbd_toolkit.progress import STAGES
+    ctx = _ctx()
+    for stage in STAGES:  # run every required step of cycle 1, closing with rehabituation
+        for step in stage.steps:
+            if step.required:
+                _rec(ctx, step.operation)
+    _rec(ctx, "disruption.surface")  # cycle 2 under way
+    past = cycle_progress(ctx.ledger, ctx.log, cycle=1)
+    assert (past["cycle"], past["current_cycle"], past["next_step"]) == (1, 2, None)
+    assert {s["status"] for s in past["stages"]} == {"done"}
+    assert [s["runs"] for s in past["stages"][2]["steps"]] == [1, 1]  # cycle 2's surface excluded
+    now = cycle_progress(ctx.ledger, ctx.log)
+    assert (now["cycle"], now["current_cycle"]) == (2, 2)
+    assert now["stages"][2]["steps"][0]["runs"] == 1
+    with pytest.raises(ValueError):
+        cycle_progress(ctx.ledger, ctx.log, cycle=3)

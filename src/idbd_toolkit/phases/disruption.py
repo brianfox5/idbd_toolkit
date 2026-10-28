@@ -90,12 +90,15 @@ class DisruptionPhase(PhaseModule):
         *,
         seed_anomaly: str | None = None,
         seed_pathway: Pathway = Pathway.ANOMALOUS_OBSERVATIONS,
+        seed_files: list[str] | None = None,
         override: Mode | None = None,
     ) -> list[DisruptionCandidate]:
         """Intake candidate disruptions (AUTO), each tagged by pathway.
 
         ``seed_anomaly`` is the researcher's initiating observation, added as a
-        candidate (source ``"researcher_seed"``). Candidates are de-duplicated by
+        candidate (source ``"researcher_seed"``); ``seed_files`` names the project
+        files that support it, recorded with the surfaced set so they travel with
+        the inquiry (and stay out of the baseline). Candidates are de-duplicated by
         (description, pathway); the surfaced set — with a per-pathway count — is
         recorded to the inquiry log.
         """
@@ -138,6 +141,7 @@ class DisruptionPhase(PhaseModule):
                 "candidates": [c.to_dict() for c in deduped],
                 "by_pathway": by_pathway,
                 "by_dimension": by_dimension,
+                "seed_files": list(seed_files or []),
             },
         )
         return deduped

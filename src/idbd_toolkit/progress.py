@@ -8,6 +8,8 @@ rehabituation that closes the loop.
 
 Rules:
   * only events since the last ``orchestrator.rehabituate`` count (current cycle);
+    a past cycle can be reviewed by number — its events run up to and including
+    the rehabituation that closed it;
   * a declined CHECKPOINT (``approved=False``) does not complete a step;
   * an Execution ``route`` back to Design or Development re-opens that stage and
     every stage after it — earlier work there no longer counts;
@@ -43,11 +45,11 @@ class Stage:
 
 
 STAGES: tuple[Stage, ...] = (
-    Stage("intake", "Intake", "the researcher's kickoff brief", (
-        Step("intake.received", "record_brief", "Record the inquiry brief"),
+    Stage("intake", "Intake", "Documenting initial researcher beliefs, curiosities, and current evidence base", (
+        Step("intake.received", "record_brief", "Import researcher beliefs and selected evidence base"),
     )),
-    Stage("baseline", "Baseline", "habituation: the initial BAM and priors", (
-        Step("baseline.establish", "establish_baseline", "Establish the baseline BAM"),
+    Stage("baseline", "Baseline", "Constructing the baseline Best Available Model (BAM) and identifying explicit priors", (
+        Step("baseline.establish", "establish_baseline", "Establish baseline from literature and researcher beliefs"),
     )),
     Stage("disruption", "Disruption", "recognizing anomalies", (
         Step("disruption.surface", "disruption_surface", "Surface candidate disruptions",
@@ -98,12 +100,19 @@ def _stage_index(key: str) -> int:
     return next(i for i, s in enumerate(STAGES) if s.key == key)
 
 
-def cycle_progress(ledger: BeliefLedger, log: InquiryLog) -> dict[str, Any]:
-    """Summarize the current cycle stage by stage, plus the suggested next step."""
+def cycle_progress(ledger: BeliefLedger, log: InquiryLog,
+                   cycle: int | None = None) -> dict[str, Any]:
+    """Summarize a cycle stage by stage (the current one by default), plus the
+    suggested next step. A completed cycle has no next step."""
     events = log.events()
-    start = max((i for i, e in enumerate(events)
-                 if e.operation == "orchestrator.rehabituate"), default=-1) + 1
-    segment = events[start:]
+    ends = [i for i, e in enumerate(events) if e.operation == "orchestrator.rehabituate"]
+    current = len(ends) + 1
+    cycle = current if cycle is None else cycle
+    if not 1 <= cycle <= current:
+        raise ValueError(f"no cycle {cycle}: this inquiry has {current} cycle(s)")
+    past = cycle < current
+    start = ends[cycle - 2] + 1 if cycle > 1 else 0
+    segment = events[start:ends[cycle - 1] + 1] if past else events[start:]
 
     # per-stage cutoff: an Execution route back re-opens its target and later stages
     cutoff = [-1] * len(STAGES)
@@ -117,7 +126,7 @@ def cycle_progress(ledger: BeliefLedger, log: InquiryLog) -> dict[str, Any]:
     stages: list[dict[str, Any]] = []
     next_step: dict[str, Any] | None = None
     for si, stage in enumerate(STAGES):
-        carried = ledger.cycle > 1 and stage.key in _CARRIED
+        carried = cycle > 1 and stage.key in _CARRIED
         steps = []
         for step in stage.steps:
             runs = [e for i, e in enumerate(segment)
@@ -137,7 +146,7 @@ def cycle_progress(ledger: BeliefLedger, log: InquiryLog) -> dict[str, Any]:
         complete = all(s["done"] for s in steps if s["required"])
         if carried:
             status = "carried"
-        elif complete and stage.key != "advance":
+        elif complete and (stage.key != "advance" or past):
             status = "done"
         elif next_step is None:
             status = "active"
@@ -149,7 +158,8 @@ def cycle_progress(ledger: BeliefLedger, log: InquiryLog) -> dict[str, Any]:
                        "status": status, "steps": steps})
 
     return {
-        "cycle": ledger.cycle,
+        "cycle": cycle,
+        "current_cycle": current,
         "stages": stages,
         "active_stage": next_step["stage"] if next_step else None,
         "next_step": next_step,

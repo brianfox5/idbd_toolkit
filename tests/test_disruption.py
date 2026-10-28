@@ -87,3 +87,14 @@ def test_surface_needs_an_anomaly_or_a_candidate():
     with pytest.raises(ValueError):
         reg.call("disruption_surface", {})
     assert len(reg.call("disruption_surface", {"seed_anomaly": "a surprise"})) == 1
+
+
+def test_surface_records_files_supporting_the_anomaly():
+    from idbd_toolkit import InquiryContext, build_registry
+    ctx = InquiryContext()
+    reg = build_registry(ctx)
+    reg.call("disruption_surface", {"seed_anomaly": "a surprise",
+                                    "seed_files": ["Board minutes 2019.pdf"]})
+    assert ctx.log.events()[-1].payload["seed_files"] == ["Board minutes 2019.pdf"]
+    reg.call("disruption_surface", {"seed_anomaly": "another surprise"})
+    assert ctx.log.events()[-1].payload["seed_files"] == []

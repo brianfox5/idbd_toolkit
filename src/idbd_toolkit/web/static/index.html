@@ -47,9 +47,17 @@
   h3 { font-size:1.15rem; margin:0; }
   .note { color:var(--muted); font-size:.78rem; }
   .desc { color:var(--ink-2); font-size:.85rem; }
+  .form > .desc { white-space: pre-line; }
 
   /* phase rail */
   .rail { list-style:none; margin:0; padding:0; }
+  .railhead select { width:100%; font-size:.8rem; margin:-.2rem 0 .6rem; }
+  .run { margin-top:.8rem; padding-top:.6rem; border-top:1px dashed var(--border); }
+  .run:first-of-type { border-top:0; padding-top:0; }
+  .runhead { font-weight:600; font-size:.8rem; }
+  .card fieldset { border:0; padding:0; margin:.4rem 0 0; min-width:0; }
+  .card.past .uploads .drop, .card.past [data-add], .card.past [data-prefill], .card.past .rm { display:none; }
+  .card.past details summary, .ev summary { cursor:pointer; font-size:.8rem; color:var(--ink-2); }
   .rail li { display:flex; gap:.6rem; align-items:flex-start; padding:.45rem .4rem; border-radius:6px; cursor:pointer; }
   .rail li:hover { background:var(--hilite); }
   .rail li.sel { background:var(--hilite); outline:1px solid var(--series-1); }
@@ -130,6 +138,18 @@
   .ev { display:grid; grid-template-columns:2.5rem 6.5rem 1fr; gap:.5rem; padding:.35rem 0;
     border-top:1px solid var(--border); font-size:.83rem; align-items:start; }
   .ev:first-child { border-top:0; }
+  details.ev { display:block; }
+  details.ev > summary { display:grid; grid-template-columns:2.5rem 6.5rem 1fr; gap:.5rem; list-style:none; font-size:.83rem; color:var(--ink); }
+  details.ev > summary::-webkit-details-marker { display:none; }
+  details.ev > summary .op { color:var(--muted); font-size:.74rem; }
+  details.ev[open] > summary { font-weight:500; }
+  .evbody { margin:.4rem 0 .3rem 9.5rem; font-size:.8rem; }
+  .evbody h4 { margin:.5rem 0 .2rem; font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-2); }
+  .tv { margin:.1rem 0; }
+  dl.tv dt { font-weight:600; font-size:.76rem; color:var(--ink-2); }
+  dl.tv dd { margin:0 0 .3rem .9rem; white-space:pre-wrap; }
+  ol.tv { padding-left:1.3rem; }
+  .logbar { display:flex; gap:.4rem; margin:.3rem 0 .4rem; }
   .ev .v { color:var(--muted); font-variant-numeric:tabular-nums; }
   .cyc { margin:.8rem 0 .2rem; font-size:.75rem; font-weight:600; color:var(--ink-2); text-transform:uppercase; letter-spacing:.05em; }
 
@@ -212,7 +232,8 @@
 <div class="layout" id="workspace" hidden>
   <!-- phase rail -->
   <nav class="panel sticky">
-    <h2>Inquiry cycle</h2>
+    <div class="railhead"><h2>Inquiry cycle</h2>
+      <select id="cycle-sel" hidden title="Review an earlier cycle"></select></div>
     <ul class="rail" id="rail"></ul>
   </nav>
 
@@ -225,9 +246,9 @@
       <button class="btn primary small" id="ro-login" hidden>Log in</button>
     </div>
     <div class="tabs">
-      <button data-tab="guided" class="on">Guided</button>
-      <button data-tab="log">Inquiry log</button>
-      <button data-tab="console">Tool console</button>
+      <button data-tab="guided" class="on">Guided process workflow</button>
+      <button data-tab="log">Inquiry log audit trail</button>
+      <button data-tab="console">Manual JSON entry</button>
     </div>
     <section class="panel" id="tab-guided"></section>
     <section class="panel" id="tab-log" hidden></section>
@@ -237,6 +258,7 @@
   <!-- belief state -->
   <aside class="panel sticky">
     <h2>Best Achievable Model</h2>
+    <div class="note" id="belief-note" hidden></div>
     <div class="bam" id="bam">—</div>
     <div class="side-sec" id="wm"></div>
     <div class="side-sec"><h2>Credences</h2><div id="commits"></div></div>
@@ -284,12 +306,12 @@ function toast(msg, kind=''){
 $('#theme').onclick = () => { const r=document.documentElement; r.dataset.theme = r.dataset.theme==='dark'?'light':'dark'; };
 
 // ---------- app state ----------
-const S = { me:null, slug:null, project:null, agent:null, assist:null, agentNotes:{}, drafts:{}, draftsFor:undefined, view:'', editing:null, newOpen:false, homeTok:'', sessions:null, state:null, progress:null, log:[], tools:{}, selected:null, prev:{}, token:'', busy:false, open:{} };
+const S = { me:null, slug:null, project:null, agent:null, assist:null, agentNotes:{}, drafts:{}, draftsFor:undefined, view:'', editing:null, newOpen:false, homeTok:'', sessions:null, state:null, progress:null, log:[], tools:{}, selected:null, viewCycle:null, pastRuns:{}, prev:{}, token:'', busy:false, open:{} };
 
 const MODE_WHY = {
-  auto: 'Runs on its own (human-on-the-loop): you review the result afterwards.',
-  checkpoint: 'Runs, then pauses at the boundary for your go/no-go.',
-  interactive: 'Your judgment is the input (human-in-the-loop).',
+  auto: 'Automatic processing: Once your input is received, this step runs autonomously and the output passed forward as an input to the next step of the process.', <!--- (human-on-the-loop) --->
+  checkpoint: 'Checkpoint: In this step, you are asked to explicitly review, modify (if needed), and approve the inputs before passing them forward to the next step of the process.',
+  interactive: 'Interactive: Your judgment is the input (human-in-the-loop).',
 };
 
 // Fields that read better as multi-line text.
@@ -300,37 +322,47 @@ const LABELS = {
   'record_brief.initiating_anomaly': 'what prompted this inquiry (optional)',
   'disruption_surface.seed_anomaly': 'initiating anomaly',
   'disruption_surface.seed_pathway': 'anomaly pathway',
+  'disruption_surface.seed_files': 'materials supporting the anomaly',
 };
+
+// Note: these hints override any text presented in tools.py, and should be reserved for notes for the web application specifically or interfacing through that.
+// The information provided as field descriptions in tools.py will not only show on the website if no hint is provided, but it is also the context that AI agents can read when performing their tasks.
+
 const HINTS = {
+  references: 'One citation per line — paste straight from any reference manager in any typically employed citation format. This is for reference only, these papers will not be downloaded or extracted without explicit instruction to do so in later steps.',
   seed_anomaly: 'The surprise that fails to accord with the baseline beliefs. Prefilled from the brief if you noted one at Intake; edit or replace it here.',
   seed_pathway: 'How the anomaly arrives — Methods: new ways of doing · Theories: perceived gaps · Model: unsolved puzzles · Phenomenon: unexpected behavior · Data: anomalous observations (default).',
-  initiating_anomaly: 'Optional. Kept as a record of what started the inquiry and carried forward to seed Disruption (step 1). The baseline is written without it — the habit before the surprise.',
   magnitude: 'Qualitative strength of the doubt: mild ×0.7, moderate ×0.5, strong ×0.33, severe ×0.2 on the odds.',
   bayes_factor: 'Overrides magnitude. <1 weakens, >1 strengthens.',
   target_strength: 'Overrides both: set the credence directly.',
   decision: 'converge → Enrichment; refine_hypotheses → back to Design; new_prototype → back to Development.',
   sufficient: 'Is the current BAM still adequate? "No" opens the inquiry.',
   proposed_statement: 'You will be asked to refine this framing before it is recorded.',
-  references: 'One citation per line — paste straight from Bookends or any reference manager.',
 };
 
 // ---------- data loading ----------
+// Events of the cycle on screen: the current one, or a completed one being
+// reviewed (up to the rehabituation that closed it).
 function currentCycleEvents(){
-  const i = S.log.map(e=>e.operation).lastIndexOf('orchestrator.rehabituate');
-  return S.log.slice(i+1);
+  const ends = S.log.map((e,i) => e.operation==='orchestrator.rehabituate' ? i : -1).filter(i => i>=0);
+  const n = S.viewCycle || ends.length+1, start = n>1 ? ends[n-2]+1 : 0;
+  return n <= ends.length ? S.log.slice(start, ends[n-1]) : S.log.slice(start);
 }
+const viewingPast = () => !!(S.progress && S.progress.cycle < S.progress.current_cycle);
 function lastPayload(op){
   const ev = currentCycleEvents().filter(e=>e.operation===op && e.payload.approved!==false);
   return ev.length ? ev[ev.length-1].payload : null;
 }
 async function refresh({keepSel=true}={}){
-  const [st, pr, lg, ss, dr] = await Promise.all([api(pa('state')), api(pa('progress')), api(pa('log')),
+  let [st, pr, lg, ss, dr] = await Promise.all([api(pa('state')),
+    api(pa('progress')+(S.viewCycle ? '?cycle='+S.viewCycle : '')), api(pa('log')),
     api('api/sessions'), api(pa('drafts'))]);
   if(!st.ok){ toast(`Project unavailable: ${st.body.detail||st.status}`, 'warn'); return goHome(); }
   S.sessions = ss.body;
   S.project = (ss.body.sessions||[]).find(m => m.slug===S.slug) || S.project;
   if(dr.ok && S.draftsFor !== S.slug){ S.drafts = dr.body; S.draftsFor = S.slug; }  // reload only on project change
-  const wasActive = S.progress && S.progress.active_stage;
+  if(!pr.ok && S.viewCycle){ S.viewCycle = null; pr = await api(pa('progress')); }  // that cycle is gone
+  const wasActive = S.progress && S.progress.cycle===pr.body.cycle && S.progress.active_stage;
   S.state = st.body; S.progress = pr.body; S.log = lg.body;
   // follow the inquiry: when the stage being worked on completes, move to the next one
   const followed = keepSel && wasActive && S.selected===wasActive && S.progress.active_stage!==wasActive;
@@ -348,7 +380,7 @@ async function loadTools(){
 function render(){ renderHeader(); renderRail(); renderGuided(); renderBelief(); renderLog(); }
 
 function renderHeader(){
-  $('#cycle-pill').textContent = 'cycle '+S.progress.cycle;
+  $('#cycle-pill').textContent = 'cycle '+S.progress.cycle+(viewingPast() ? ' of '+S.progress.current_cycle : '');
   const cur = S.project;
   $('#proj-name').textContent = cur ? cur.name : '';
   $('#proj-name').title = cur && cur.read_only ? 'Read-only: served from the original worked-example files'
@@ -371,6 +403,12 @@ function renderRail(){
       <span><div class="lbl">${esc(s.label)}</div><div class="gl">${esc(s.gloss)}</div></span></li>`;
   });
   $('#rail').innerHTML = items.join('');
+  const sel = $('#cycle-sel'), cur = S.progress.current_cycle;
+  sel.hidden = cur < 2;
+  sel.innerHTML = Array.from({length:cur}, (_,i) => i+1).map(n =>
+    `<option value="${n}" ${n===S.progress.cycle?'selected':''}>Cycle ${n}${n===cur?' (current)':' (complete)'}</option>`).join('');
+  sel.onchange = () => { const n = +sel.value; S.viewCycle = n===cur ? null : n;
+    S.selected = n===cur ? null : n>1 ? 'disruption' : 'intake'; S.open = {}; refresh(); };
   $$('#rail li[data-k]').forEach(li => li.onclick = () => { S.selected = li.dataset.k; switchTab('guided'); render(); });
 }
 
@@ -381,15 +419,20 @@ function renderGuided(){
   let h = `<div class="stagehead"><h3>${esc(st.label)}</h3><span class="note">${esc(st.gloss)} · ${statusTxt}</span></div>`;
   if(nx){
     const nst = S.progress.stages.find(s=>s.key===nx.stage);
-    h += `<div class="nextbar"><span>Next suggested step:</span><strong>${esc(nst.label)} → ${esc(nx.label)}</strong>
-      <span class="mode ${nx.mode}">${nx.mode}</span><span class="spacer" style="flex:1"></span>
+    h += `<div class="nextbar"><span>Next suggested step in the workflow:</span><strong>${esc(nst.label)} → ${esc(nx.label)}</strong>
+      <!--- BCF 10.21.26: don't think we need to show the pill button, it is confusing but kept code just in case <span class="mode ${nx.mode}">${nx.mode}</span><span class="spacer" style="flex:1"></span> --->
       ${nx.stage!==S.selected?`<button class="btn small primary" id="goto-next">Go</button>`:''}</div>`;
   }
-  if(st.status==='carried')
+  if(viewingPast())
+    h += `<div class="nextbar"><span>Reviewing cycle ${S.progress.cycle}, which is complete. Each step shows what was
+      recorded; nothing can be run here.</span><span class="spacer" style="flex:1"></span>
+      <button class="btn small primary" id="to-current">Back to cycle ${S.progress.current_cycle}</button></div>`;
+  if(st.status==='carried' && !viewingPast())
     h += `<p class="desc">In cycle ${S.progress.cycle}, the BAM and prior commitments are inherited from the previous
       cycle's Enrichment — the new habit. You can still run these steps, but the loop resumes at Disruption.</p>`;
   st.steps.forEach(step => { h += stepCard(st, step, nx); });
   $('#tab-guided').innerHTML = h;
+  if($('#to-current')) $('#to-current').onclick = () => { S.viewCycle = null; S.selected = null; S.open = {}; refresh(); };
   if($('#goto-next')) $('#goto-next').onclick = () => { S.selected = nx.stage; S.open[nx.tool]=true; render(); };
   st.steps.forEach(step => wireCard(step));
 }
@@ -401,6 +444,24 @@ function stepCard(st, step, nx){
   const status = step.runs ? `<span class="status ok">✓ ${step.runs>1?step.runs+' runs':'done'}</span>`
     : step.done ? '<span class="status ok">carried</span>'
     : `<span class="status">${step.required?'required':'optional'}${step.repeatable?' · repeatable':''}</span>`;
+  if(viewingPast()){
+    // The step's own form, filled with what was submitted and locked (one per run).
+    const runs = S.pastRuns[step.tool] = currentCycleEvents().filter(e => e.operation===step.operation);
+    return `<div class="card past ${open?'open':''}" id="card-${step.tool}">
+      <div class="top"><span class="t">${esc(step.label)}</span><span class="mode ${step.mode}">${step.mode}</span>${status}
+        <button class="btn small" data-toggle="${step.tool}">${open?'Hide':'View'}</button></div>
+      <div class="why">${esc(MODE_WHY[step.mode])}</div>
+      ${step.last_summary?`<div class="last">Last: ${esc(step.last_summary)}</div>`:''}
+      <div class="form"><div class="desc">${esc(tool.description)}</div>
+        ${runs.map((e,i) => `<div class="run">
+          ${runs.length>1?`<div class="runhead">Run ${i+1} of ${runs.length}</div>`:''}
+          <div class="note">v${e.ledger_version} · ${esc(when(e.timestamp))} · ${esc(e.summary)}${
+            e.payload.approved===false?' <span class="badge">declined</span>':''}${e.args?'':
+            ' · <span title="This run was recorded before step inputs were kept, so the form is rebuilt from its recorded result; some inputs may be blank.">rebuilt from the recorded result</span>'}</div>
+          <fieldset class="fields" disabled data-run-i="${i}"></fieldset>
+          <details><summary>What was recorded</summary>${tree(e.payload)}</details></div>`).join('')
+        || '<div class="note">Not run in this cycle.</div>'}</div></div>`;
+  }
   return `<div class="card ${isNext?'next':''} ${open?'open':''}" id="card-${step.tool}">
     <div class="top"><span class="t">${esc(step.label)}</span><span class="mode ${step.mode}">${step.mode}</span>${status}
       <button class="btn small" data-toggle="${step.tool}">${open?'Hide':(step.runs&&!step.repeatable?'Redo':'Open')}</button></div>
@@ -517,9 +578,10 @@ function renderAgentButton(){
 
 function assistBar(tool){
   return `<div class="assist">
+    <span class="note">Drafts the fields in this form using data in the inquiry log, in concert with any added (optional) guidance you provide (e.g., weight a certain paper more heavily, consider papers by a certain author, etc.). </span>
     <button class="btn small primary" type="button" data-assist="${tool}"
       title="Drafts this form from the brief, its reference files and the belief state. Nothing is recorded until you run the step.">✦ Draft with agent</button>
-    <input type="text" data-guidance="${tool}" placeholder="Optional guidance, e.g. “emphasise patient outcomes”">
+    <input type="text" data-guidance="${tool}" placeholder="Add (optional) further guidance here">
     <span class="note" data-agent-label>${agentReady() ? 'Using '+esc(agentLabel()) : 'Set up a model in Agent settings first.'}</span>
     <span class="note" data-assist-msg="${tool}"></span></div>`;
 }
@@ -536,6 +598,9 @@ async function runAssist(step, box, card){
       body: JSON.stringify({guidance: $('[data-guidance]', card).value, provider: agentChoice(),
                             draft: Object.keys(current||{}).length ? current : null})});
     if(!r.ok){ msg.textContent = ''; toast(r.body.detail || ('Agent error '+r.status), 'bad'); return; }
+    // Which files to cite is the researcher's choice: keep their ticks, not the agent's.
+    $$('.uploads', box).forEach(u => { const k = u.closest('[data-k]').dataset.k;
+      if(current && current[k]) r.body.args[k] = current[k]; else delete r.body.args[k]; });
     S.drafts[step.tool] = r.body.args;
     buildForm(box, tool, r.body.args);
     box.dispatchEvent(new Event('change'));  // persist the draft like typed input
@@ -552,6 +617,11 @@ function wireCard(step){
   const card = $('#card-'+step.tool); if(!card) return;
   $('[data-toggle]', card).onclick = () => { S.open[step.tool] = !card.classList.contains('open'); renderGuided(); };
   if(!card.classList.contains('open')) return;
+  if(viewingPast()){
+    $$('[data-run-i]', card).forEach(box =>
+      buildForm(box, S.tools[step.tool], submittedArgs(S.pastRuns[step.tool][+box.dataset.runI], S.tools[step.tool])));
+    return;
+  }
   const box = $('.fields', card), tool = S.tools[step.tool];
   buildForm(box, tool, S.drafts[step.tool] || recordedArgs(step.tool));
   watchDraft(box, tool);
@@ -568,6 +638,8 @@ function wireCard(step){
 // ---------- belief panel ----------
 function renderBelief(){
   const s = S.state;
+  $('#belief-note').hidden = !viewingPast();
+  $('#belief-note').textContent = `Current state (cycle ${S.progress.current_cycle}), not as it stood at the end of cycle ${S.progress.cycle}.`;
   $('#bam').innerHTML = s.bam ? `<div class="st">${esc(s.bam.status)}</div>${esc(s.bam.description)}`
     : '<span class="note">No BAM yet — establish a baseline.</span>';
   const wm = s.working_model;
@@ -615,20 +687,47 @@ async function toggleTraj(el, id){
 
 // ---------- log ----------
 function renderLog(){
-  let cyc = 1, h = `<h2>Inquiry log (provenance)</h2><div class="cyc">Cycle 1</div>`;
+  let cyc = 1, h = `<h2>Inquiry log</h2>
+   <p class="desc">A audit trail of the different steps taken during the inquiry process, with versioning indicating which how many times a particular step has been run (note that
+    there may be multiple versions of a particular step within a particular cycle of inquiry).  Provides a summary of the steps performed by the agents, decisions made by the researcher and any overrides, and the current state of various beliefs in light of 
+    past research, data, and analysis performed within the inquiry process.</p>
+      <div class="logbar"><button class="btn small" type="button" data-expand="1">Expand all</button>
+        <button class="btn small" type="button" data-expand="0">Collapse all</button>
+        <span class="note">Click an entry for its full record.</span></div>
+      <div class="cyc">Cycle 1</div>`;
+  const steps = {};
+  S.progress.stages.forEach(st => st.steps.forEach(x => steps[x.operation] = `${st.label} → ${x.label}`));
   S.log.forEach(e => {
-    h += `<div class="ev"><span class="v">v${e.ledger_version}</span><span><span class="mode ${esc(e.mode)}">${esc(e.mode)}</span></span>
-      <span><strong>${esc(e.operation)}</strong> — ${esc(e.summary)}${e.payload.approved===false?' <span class="badge">declined</span>':''}</span></div>`;
+    h += `<details class="ev"><summary><span class="v">v${e.ledger_version}</span><span><span class="mode ${esc(e.mode)}">${esc(e.mode)}</span></span>
+      <span><strong>${esc(steps[e.operation] || e.operation)}</strong> — ${esc(e.summary)}${e.payload.approved===false?' <span class="badge">declined</span>':''}
+        <div class="op">${esc(e.operation)} · ${esc(when(e.timestamp))}</div></span></summary>
+      <div class="evbody">
+        <div class="note">Phase: ${esc(e.phase)} · autonomy: ${esc(e.mode)} (${esc(MODE_WHY[e.mode]||'')}) · belief ledger version ${e.ledger_version}</div>
+        ${e.args ? `<h4>Inputs submitted</h4>${tree(e.args)}` : ''}
+        <h4>Recorded</h4>${tree(e.payload)}</div></details>`;
     if(e.operation==='orchestrator.rehabituate') h += `<div class="cyc">Cycle ${++cyc}</div>`;
   });
   if(!S.log.length) h += '<span class="note">no events yet</span>';
   $('#tab-log').innerHTML = h;
+  $$('#tab-log [data-expand]').forEach(b => b.onclick = () =>
+    $$('#tab-log details.ev').forEach(d => d.open = b.dataset.expand==='1'));
+}
+
+// A recorded value as nested, readable lists (no raw JSON).
+function tree(v){
+  if(v==null || v==='') return '<span class="note">—</span>';
+  if(Array.isArray(v)) return v.length ? `<ol class="tv">${v.map(x => `<li>${tree(x)}</li>`).join('')}</ol>` : '<span class="note">none</span>';
+  if(typeof v==='object') return Object.keys(v).length
+    ? `<dl class="tv">${Object.entries(v).map(([k,x]) => `<dt>${esc(k.replace(/_/g,' '))}</dt><dd>${tree(x)}</dd>`).join('')}</dl>`
+    : '<span class="note">none</span>';
+  if(typeof v==='boolean') return v ? 'yes' : 'no';
+  return esc(String(v));
 }
 
 // ---------- forms ----------
 // Domain-aware widgets for well-known field names; generic JSON-Schema widgets otherwise.
 function commitmentOpts(){ return (S.state.commitments||[]).map(c=>({v:c.id, t:`${pct(c.strength)} · ${trunc(c.statement,90)}`})); }
-function doubtOpts(){ return (S.state.doubts||[]).filter(d=>d.status==='open').map(d=>({v:d.id, t:trunc(d.description,110)})); }
+function doubtOpts(){ return (S.state.doubts||[]).filter(d=>viewingPast() || d.status==='open').map(d=>({v:d.id, t:trunc(d.description,110)})); }
 function frameOpts(){
   return currentCycleEvents().filter(e=>e.operation==='design.frame' && e.payload.frame)
     .map(e=>({v:e.payload.frame.id, t:trunc(e.payload.frame.statement,110)}));
@@ -674,10 +773,43 @@ function fillForm(box, tool, args){
         $$('[data-k]', r).forEach(f => { if(o[f.dataset.k]!=null) f.value = o[f.dataset.k]; }); });
     } else if(el.classList.contains('grid2')){
       $$('textarea', el).forEach(t => t.value = (v[t.dataset.dim]||[]).join('\n'));
+    } else if(el.tagName==='SELECT' && v!=='' && ![...el.options].some(o => o.value===String(v))){
+      const d = (S.state.doubts||[]).find(x => x.id===v);
+      el.insertAdjacentHTML('beforeend', `<option value="${esc(String(v))}">${esc(d ? trunc(d.description,110) : String(v))}</option>`);
+      el.value = String(v);
     } else if(el.tagName!=='DIV'){
       el.value = Array.isArray(v) ? v.join('\n') : typeof v==='object' ? JSON.stringify(v, null, 2) : String(v);
     }
   }
+}
+
+// What a recorded run was submitted with: its inputs when the log kept them,
+// otherwise rebuilt from what it recorded (older logs, e.g. the worked example).
+const RENAMED = {bam_sufficient:'sufficient', prompted_by:'prompting_doubt_ids'};
+function submittedArgs(e, tool){
+  if(e.args) return e.args;
+  const p = e.payload, props = (tool.parameters||{}).properties||{};
+  if(e.operation==='intake.received') return briefArgs(p.brief||{});
+  const pool = {...p, ...((p.bam||{}).spec||{}), ...((p.model||{}).spec||{}), ...(p.frame||{})};
+  if(p.bam) pool.bam_description = p.bam.description;
+  if(p.model) pool.description = p.model.description;
+  if(p.frame) pool.proposed_statement = p.frame.statement;
+  Object.entries(RENAMED).forEach(([a,b]) => { if(a in p) pool[b] = p[a]; });
+  if(e.operation==='disruption.surface'){
+    const c = p.candidates||[], seed = c.find(x => x.source==='researcher_seed');
+    if(seed){ pool.seed_anomaly = seed.description; pool.seed_pathway = seed.pathway; }
+    pool.candidates = c.filter(x => x!==seed);
+  }
+  return Object.fromEntries(Object.entries(pool).filter(([k,v]) => k in props && v!=null));
+}
+function briefArgs(b){
+  // Briefs recorded before reference_files existed listed uploaded files under references.
+  const isFile = r => /\.[A-Za-z0-9]{2,5}$/.test(r) && !/\s\(\d{4}\)/.test(r);
+  const refs = b.references||[];
+  return {domain:b.domain, belief_summary:b.belief_summary, initiating_anomaly:b.initiating_anomaly,
+    researcher:b.researcher||undefined,
+    references: refs.filter(r => !(b.reference_files ? false : isFile(r))),
+    reference_files: b.reference_files || refs.filter(isFile)};
 }
 
 // With no draft, show what was last recorded for steps whose log payload holds
@@ -690,14 +822,8 @@ function recordedArgs(toolName){
     return undefined;
   }
   if(toolName==='record_brief'){
-    const b = (lastPayload('intake.received')||{}).brief; if(!b) return undefined;
-    // Briefs recorded before reference_files existed listed uploaded files under references.
-    const isFile = r => /\.[A-Za-z0-9]{2,5}$/.test(r) && !/\s\(\d{4}\)/.test(r);
-    const refs = b.references||[];
-    return {domain:b.domain, belief_summary:b.belief_summary, initiating_anomaly:b.initiating_anomaly,
-      researcher:b.researcher||undefined,
-      references: refs.filter(r => !(b.reference_files ? false : isFile(r))),
-      reference_files: b.reference_files || refs.filter(isFile)};
+    const b = (lastPayload('intake.received')||{}).brief;
+    return b ? briefArgs(b) : undefined;
   }
   return undefined;
 }
@@ -721,6 +847,8 @@ function watchDraft(box, tool){
 function fieldHTML(tname, k, sch, required){
   const sp = (tname==='record_brief' && k==='reference_files') ? {w:'uploads',
       hint:'Source documents (articles, reports, notes). They are stored with this project; tick the ones the brief draws on.'}
+    : (tname==='disruption_surface' && k==='seed_files') ? {w:'uploads', tickNew:true,
+      hint:'Evidence for the initiating anomaly (data extracts, reports, articles). Stored with this project alongside the brief’s files; tick the ones that support the anomaly. PDF or text files can be read by the agent; none of them are used for the baseline.'}
     : (tname==='disruption_triage' && k==='selected') ? {w:'candidates'}
     : (tname==='development_build_prototype' && k==='hypotheses') ? {w:'lines', prefillHyps:true}
     : SPECIAL[k] ? SPECIAL[k]() : null;
@@ -745,7 +873,7 @@ function fieldHTML(tname, k, sch, required){
         <span><span class="badge">${esc(c.pathway)}</span> ${esc(c.description)}</span></label>`).join('')}</div>`
       : `<div class="note" id="${id}">No surfaced candidates this cycle — run “Surface candidate disruptions” first.</div>`;
   } else if(sp && sp.w==='uploads'){
-    w = `<div class="uploads" id="${id}">
+    w = `<div class="uploads" id="${id}" ${sp.tickNew?'data-ticknew':''}>
       <div class="drop">Drag files here, or<button class="btn small" type="button" data-pick>choose files…</button>
         <input type="file" multiple hidden></div>
       <ul></ul></div>`;
@@ -790,18 +918,21 @@ const fmtSize = n => n < 1024 ? n+' B' : n < 1048576 ? (n/1024).toFixed(0)+' KB'
 
 function wireUploads(el, initial){
   const list = $('ul', el), input = $('input[type=file]', el), drop = $('.drop', el);
-  // With a saved draft, tick exactly what was ticked; otherwise tick everything.
+  // With a saved draft, tick exactly what was ticked; otherwise tick everything
+  // except files recorded as evidence for an anomaly (they stay out of the brief).
   const ticked = new Set(initial||[]); let known = initial ? null : new Set();
+  const anomaly = new Set(S.log.filter(e => e.operation==='disruption.surface')
+    .flatMap(e => e.payload.seed_files||[]));
   const show = async () => {
     const r = await api(pa('references'));
     const refs = r.ok ? r.body : [];
     if(known===null) known = new Set(refs.map(f=>f.name));  // first load with a draft: keep its selection
-    refs.forEach(f => { if(!known.has(f.name)){ known.add(f.name); ticked.add(f.name); } });
+    refs.forEach(f => { if(!known.has(f.name)){ known.add(f.name); if(!anomaly.has(f.name)) ticked.add(f.name); } });
     list.innerHTML = refs.map(f => `<li>
-      <input type="checkbox" value="${esc(f.name)}" ${ticked.has(f.name)?'checked':''} title="Include in the brief">
+      <input type="checkbox" value="${esc(f.name)}" ${ticked.has(f.name)?'checked':''} title="Include in this step">
       <span class="nm"><a href="${pa('references/'+encodeURIComponent(f.name))}" target="_blank" rel="noopener">${esc(f.name)}</a></span>
       <span class="note">${fmtSize(f.size)}</span>
-      ${f.cited ? '<span class="pill" title="Cited by the recorded brief; kept as provenance">cited</span>'
+      ${f.cited ? '<span class="pill" title="Cited by a recorded step (the brief or a surfaced anomaly); kept as provenance">cited</span>'
                 : `<button class="btn small" type="button" data-rm="${esc(f.name)}" title="Remove this file">✕</button>`}</li>`).join('')
       || '<li class="note">No files yet.</li>';
     $$('input[type=checkbox]', list).forEach(c => c.onchange = () => c.checked ? ticked.add(c.value) : ticked.delete(c.value));
@@ -830,7 +961,9 @@ function wireUploads(el, initial){
 
 function wireField(box, tname, k, sch, draft){
   const id = `f-${tname}-${k}`;
-  const up = $('#'+CSS.escape(id)+'.uploads', box); if(up) wireUploads(up, draft ? (draft[k]||[]) : null);
+  // Anomaly evidence starts unticked (only files added here get ticked); the brief ticks everything.
+  const up = $('#'+CSS.escape(id)+'.uploads', box);
+  if(up) wireUploads(up, draft ? (draft[k]||[]) : up.hasAttribute('data-ticknew') ? [] : null);
   const add = $(`[data-add="${id}"]`, box);
   if(add){
     const rows = $('#'+CSS.escape(id), box);
@@ -964,8 +1097,9 @@ $$('.tabs button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 function renderConsole(){
   const names = Object.keys(S.tools);
   $('#tab-console').innerHTML = `<h2>Tool console</h2>
-    <p class="desc">Every tool in the registry — the same ones the agent calls — with raw JSON arguments.
-      CHECKPOINT/INTERACTIVE prompts still appear inline.</p>
+    <p class="desc">For debugging purposes and targeted updating.  This tab allows you access to every tool in the process flow with the required arguments provided in JSON format.  Inputting the data here manually will call
+      the appropriate tool — as would be the case if employing the guided process workflow, but in any order. The output of the tool, conditional on your provided input, is provided below after pressing the call tool button.
+      Steps that are CHECKPOINT or INTERACTIVE in nature will still prompt for additional guidance at runtime .</p>
     <div class="field"><label>Tool</label><select id="c-tool">${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select>
       <div class="hint" id="c-desc"></div></div>
     <div class="field"><label>Arguments (JSON)</label><textarea class="code" id="c-args" style="min-height:8rem">{}</textarea></div>
@@ -1019,7 +1153,7 @@ async function openProject(slug){
   const r = await api(`api/sessions/${encodeURIComponent(slug)}/open`, {method:'POST', headers:JSONH, body:'{}'});
   if(!r.ok){ toast(`Could not open "${slug}": ${r.body.detail||r.status}`, 'bad'); return goHome(); }
   if(location.hash !== '#/p/'+encodeURIComponent(slug)) history.replaceState(null, '', '#/p/'+encodeURIComponent(slug));
-  if(S.slug !== slug){ S.prev = {}; S.open = {}; S.selected = null; S.agentNotes = {}; }
+  if(S.slug !== slug){ S.prev = {}; S.open = {}; S.selected = null; S.viewCycle = null; S.agentNotes = {}; }
   S.slug = slug; S.project = r.body.session;
   showView('workspace'); await refresh({keepSel:false}); showView('workspace');
 }

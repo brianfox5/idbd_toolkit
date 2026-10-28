@@ -26,9 +26,16 @@ class InquiryEvent:
     ledger_version: int
     timestamp: str = field(default_factory=now_iso)
     payload: dict[str, Any] = field(default_factory=dict)
+    # The inputs the step was called with (what the researcher or agent entered),
+    # kept so a completed step can be shown as it was submitted. None for events
+    # recorded outside a tool call, or before inputs were kept.
+    args: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        if d["args"] is None:
+            del d["args"]  # older logs stay byte-for-byte the same shape
+        return d
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "InquiryEvent":
